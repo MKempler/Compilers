@@ -9,13 +9,20 @@ public class Token {
         TYPE_STRING,
         TYPE_BOOL,  
         TRUE,      
-        FALSE,  
+        FALSE,
+        CHAR,        
+        SPACE,         
+        QUOTE,          
+        COMMENT_START,  
+        COMMENT_END,    
         
         // Operators
         ASSIGN,    
         EQUALS,     
         NOT_EQUALS, 
-        PLUS,   
+        PLUS,
+        INTOP,
+        BOOLOP,   
         
         // Symbols
         LPAREN,    
@@ -27,7 +34,8 @@ public class Token {
         // Other tokens
         IDENTIFIER, 
         NUMBER,    
-        STRING_LIT, 
+        STRING_LIT,
+        BOOLVAL, 
         EOF       
     }
 
