@@ -5,37 +5,34 @@ public class Token {
         PRINT,      
         WHILE,     
         IF,       
-        TYPE_INT,  
-        TYPE_STRING,
-        TYPE_BOOL,  
-        TRUE,      
-        FALSE,
+        I_TYPE,   
+        
+        // Operators
+        ASSIGN_OP,    
+        EQUALS,     
+        NOT_EQUALS, 
+        PLUS,       
+        
+        // Symbols
+        OPEN_BLOCK,    
+        CLOSE_BLOCK,   
+        LPAREN,     
+        RPAREN,     
+        EOP,         
+        
+        // Other tokens
+        ID,          
         CHAR,        
-        SPACE,         
-        QUOTE,          
+        SPACE,       
+        QUOTE,       
+        NUMBER,    
+        STRING_LIT,
+        BOOLVAL,     
+        
+        // Comments
         COMMENT_START,  
         COMMENT_END,    
         
-        // Operators
-        ASSIGN,    
-        EQUALS,     
-        NOT_EQUALS, 
-        PLUS,
-        INTOP,
-        BOOLOP,   
-        
-        // Symbols
-        LPAREN,    
-        RPAREN,   
-        LBRACE,     
-        RBRACE,    
-        EOP,       
-        
-        // Other tokens
-        IDENTIFIER, 
-        NUMBER,    
-        STRING_LIT,
-        BOOLVAL, 
         EOF       
     }
 
@@ -70,10 +67,9 @@ public class Token {
         return column;
     }
 
-
     @Override
     public String toString() {
-        return String.format("Token[type=%s, lexeme='%s', line=%d, column=%d]",
+        return String.format("%s [ %s ] found at (%d:%d)",
                            type, lexeme, line, column);
     }
 }
