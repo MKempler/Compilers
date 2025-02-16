@@ -65,9 +65,11 @@ public class Lexer {
             case ')':
                 position++; column++;
                 return new Token(Token.Type.RPAREN, ")", line, column - 1);
+            case '"':
+                return handleString();
             default:
                 if (Character.isLetter(currentChar)) {
-                    return handleIdentifierOrKeyword();
+                    return handleIdentifier();
                 } else if (Character.isDigit(currentChar)) {
                     return handleNumber();
                 }
@@ -123,7 +125,7 @@ public class Lexer {
         return nextToken(); // Skip comment
     }
     
-    private Token handleIdentifierOrKeyword() {
+    private Token handleIdentifier() {
         StringBuilder sb = new StringBuilder();
         int startColumn = column;
         
@@ -177,6 +179,26 @@ public class Lexer {
         }
         
         return new Token(Token.Type.NUMBER, sb.toString(), line, startColumn);
+    }
+    
+    private Token handleString() {
+        StringBuilder sb = new StringBuilder();
+        int startColumn = column;
+        
+        // Skip opening quote
+        position++; column++;
+        
+        // main loop for collecting the string
+        while (position < input.length() && 
+               input.charAt(position) != '"') {
+            sb.append(input.charAt(position));
+            position++; column++;
+        }
+        
+        // Skip closing quote
+        position++; column++;
+        
+        return new Token(Token.Type.STRING_LIT, sb.toString(), line, startColumn);
     }
     
     //  skip whitespace
