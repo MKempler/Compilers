@@ -40,8 +40,22 @@ public class Lexer {
                     return handleComment();
                 }
             case '=':
+                if (position + 1 < input.length() && input.charAt(position + 1) == '=') {
+                    position += 2; column += 2;
+                    return new Token(Token.Type.EQUALS, "==", line, column - 2);
+                }
                 position++; column++;
                 return new Token(Token.Type.ASSIGN_OP, "=", line, column - 1);
+            case '!':
+                if (position + 1 < input.length() && input.charAt(position + 1) == '=') {
+                    position += 2; column += 2;
+                    return new Token(Token.Type.NOT_EQUALS, "!=", line, column - 2);
+                }
+                // Handle unexpected !
+                position++; column++;
+                return new Token(Token.Type.EOF, 
+                    String.format("Error: Unexpected character '!'", currentChar), 
+                    line, column - 1);
             default:
                 if (Character.isLetter(currentChar)) {
                     return handleIdentifierOrKeyword();
