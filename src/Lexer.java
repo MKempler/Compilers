@@ -39,6 +39,10 @@ public class Lexer {
                 if (position + 1 < input.length() && input.charAt(position + 1) == '*') {
                     return handleComment();
                 }
+            default:
+                if (Character.isLetter(currentChar)) {
+                    return handleIdentifierOrKeyword();
+                }
         }
         
         // Handle unknown
@@ -89,6 +93,40 @@ public class Lexer {
         }
         
         return nextToken(); // Skip comment
+    }
+    
+    private Token handleIdentifierOrKeyword() {
+        StringBuilder sb = new StringBuilder();
+        int startColumn = column;
+        
+        // Collect all letters
+        while (position < input.length() && 
+               Character.isLetter(input.charAt(position))) {
+            sb.append(input.charAt(position));
+            position++; column++;
+        }
+        
+        String word = sb.toString();
+        
+        // Check for keywords
+        switch (word) {
+            case "print": return new Token(Token.Type.PRINT, word, line, startColumn);
+            case "while": return new Token(Token.Type.WHILE, word, line, startColumn);
+            case "if": return new Token(Token.Type.IF, word, line, startColumn);
+            case "int": 
+            case "string":
+            case "boolean": return new Token(Token.Type.I_TYPE, word, line, startColumn);
+            case "true":
+            case "false": return new Token(Token.Type.BOOLVAL, word, line, startColumn);
+            default: 
+                if (word.length() == 1) {
+                    return new Token(Token.Type.ID, word, line, startColumn);
+                } else {
+                    return new Token(Token.Type.EOF,
+                        String.format("Error: Invalid identifier '%s' - must be single letter", word),
+                        line, startColumn);
+                }
+        }
     }
     
     //  skip whitespace

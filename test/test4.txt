@@ -1,0 +1,13 @@
+{
+print
+while
+if
+int
+string
+boolean
+true
+false
+a
+b
+abc
+}$
