@@ -24,9 +24,24 @@ public class Lexer {
         
         char currentChar = input.charAt(position);
         
-      
+        // Handle basic symbols 
+        switch (currentChar) {
+            case '{':
+                position++; column++;
+                return new Token(Token.Type.OPEN_BLOCK, "{", line, column - 1);
+            case '}':
+                position++; column++;
+                return new Token(Token.Type.CLOSE_BLOCK, "}", line, column - 1);
+            case '$':
+                position++; column++;
+                return new Token(Token.Type.EOP, "$", line, column - 1);
+        }
         
-        return null; 
+        // Handle unknown
+        position++; column++;
+        return new Token(Token.Type.EOF, 
+            String.format("Error: Unexpected character '%c'", currentChar), 
+            line, column - 1);
     }
     
     //  skip whitespace

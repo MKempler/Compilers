@@ -1,6 +1,6 @@
 public class Compiler {
     private Lexer lexer;
-    private boolean verboseMode = false;  
+    private boolean verboseMode = true;  
 
    
     public static void main(String[] args) {
@@ -9,7 +9,7 @@ public class Compiler {
         }
         
         Compiler compiler = new Compiler();
-        
+
         compiler.compile(args[0]);
     }
     
