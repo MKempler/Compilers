@@ -56,6 +56,9 @@ public class Lexer {
                 return new Token(Token.Type.EOF, 
                     String.format("Error: Unexpected character '!'", currentChar), 
                     line, column - 1);
+            case '+':
+                position++; column++;
+                return new Token(Token.Type.PLUS, "+", line, column - 1);
             default:
                 if (Character.isLetter(currentChar)) {
                     return handleIdentifierOrKeyword();
