@@ -39,6 +39,9 @@ public class Lexer {
                 if (position + 1 < input.length() && input.charAt(position + 1) == '*') {
                     return handleComment();
                 }
+            case '=':
+                position++; column++;
+                return new Token(Token.Type.ASSIGN_OP, "=", line, column - 1);
             default:
                 if (Character.isLetter(currentChar)) {
                     return handleIdentifierOrKeyword();
