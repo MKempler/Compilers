@@ -62,6 +62,8 @@ public class Lexer {
             default:
                 if (Character.isLetter(currentChar)) {
                     return handleIdentifierOrKeyword();
+                } else if (Character.isDigit(currentChar)) {
+                    return handleNumber();
                 }
         }
         
@@ -147,6 +149,28 @@ public class Lexer {
                         line, startColumn);
                 }
         }
+    }
+    
+    private Token handleNumber() {
+        StringBuilder sb = new StringBuilder();
+        int startColumn = column;
+        
+        // Collect the digits
+        while (position < input.length() && 
+               Character.isDigit(input.charAt(position))) {
+            sb.append(input.charAt(position));
+            position++; column++;
+        }
+        
+        // check if the next char is a letter
+        if (position < input.length() && Character.isLetter(input.charAt(position))) {
+            return new Token(Token.Type.EOF,
+                String.format("Error: Invalid number format at (%d:%d) - letters cannot immediately follow numbers", 
+                            line, startColumn),
+                line, startColumn);
+        }
+        
+        return new Token(Token.Type.NUMBER, sb.toString(), line, startColumn);
     }
     
     //  skip whitespace
