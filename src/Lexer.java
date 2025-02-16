@@ -59,6 +59,12 @@ public class Lexer {
             case '+':
                 position++; column++;
                 return new Token(Token.Type.PLUS, "+", line, column - 1);
+            case '(':
+                position++; column++;
+                return new Token(Token.Type.LPAREN, "(", line, column - 1);
+            case ')':
+                position++; column++;
+                return new Token(Token.Type.RPAREN, ")", line, column - 1);
             default:
                 if (Character.isLetter(currentChar)) {
                     return handleIdentifierOrKeyword();
