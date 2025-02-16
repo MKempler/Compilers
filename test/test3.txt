@@ -1,0 +1,7 @@
+{
+/* This comment is not closed
+
+   and is multiple lines
+
+
+}$

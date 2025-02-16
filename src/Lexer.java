@@ -35,6 +35,10 @@ public class Lexer {
             case '$':
                 position++; column++;
                 return new Token(Token.Type.EOP, "$", line, column - 1);
+            case '/':
+                if (position + 1 < input.length() && input.charAt(position + 1) == '*') {
+                    return handleComment();
+                }
         }
         
         // Handle unknown
@@ -42,6 +46,49 @@ public class Lexer {
         return new Token(Token.Type.EOF, 
             String.format("Error: Unexpected character '%c'", currentChar), 
             line, column - 1);
+    }
+    
+    private Token handleComment() {
+        int startLine = line;
+        int startColumn = column;
+        
+        // Skip the '/*'
+        position += 2;
+        column += 2;
+        
+        boolean foundEnd = false;
+        StringBuilder comment = new StringBuilder();
+        
+        while (position < input.length() - 1) {
+            // Check for comment end 
+            if (input.charAt(position) == '*' && input.charAt(position + 1) == '/') {
+                foundEnd = true;
+                position += 2;
+                column += 2;
+                break;
+            }
+            
+            // Handle newlines
+            if (input.charAt(position) == '\n') {
+                line++;
+                column = 1;
+                comment.append('\n');
+            } else {
+                column++;
+                comment.append(input.charAt(position));
+            }
+            position++;
+        }
+        
+        if (!foundEnd) {
+            // unclosed comment warning
+            return new Token(Token.Type.EOF,
+                String.format("Warning: unclosed comment starting at (%d:%d)", 
+                            startLine, startColumn),
+                startLine, startColumn);
+        }
+        
+        return nextToken(); // Skip comment
     }
     
     //  skip whitespace
