@@ -2,6 +2,7 @@ public class Token {
     
     public enum Type {
         
+        //keywords
         PRINT,      
         WHILE,     
         IF,       
@@ -20,7 +21,7 @@ public class Token {
         RPAREN,     
         EOP,         
         
-        // Other tokens
+        // values / identifiers
         ID,          
         CHAR,        
         SPACE,       
@@ -33,17 +34,17 @@ public class Token {
         COMMENT_START,  
         COMMENT_END,    
         
+        //error handling
         WARNING,
         EOF       
     }
 
-    //store token info
+    // What we need to track for every token
     private final Type type;      
-    private final String lexeme;
+    private final String lexeme; // the text 
     private final int line;      
     private final int column;    
 
-    // Constructor
     public Token(Type type, String lexeme, int line, int column) {
         this.type = type;
         this.lexeme = lexeme;
