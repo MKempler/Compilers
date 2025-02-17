@@ -46,6 +46,15 @@ public class Compiler {
                 System.out.println("DEBUG Lexer - " + token);
             }
             
+            // Count all errors and warnings 
+            if (token.getType() == Token.Type.EOF && token.getLexeme().startsWith("Error")) {
+                errorCount++;
+                // Store the error token but continue to the next token
+                continue;
+            } else if (token.getType() == Token.Type.WARNING) {
+                warningCount++;
+            }
+            
             // Check for end of program marker
             if (token.getType() == Token.Type.EOP) {
                 FinalTokenWasEOP = true;
@@ -54,16 +63,7 @@ public class Compiler {
                 FinalTokenWasEOP = false;
             }
             
-            // Count all errors and warnings
-            if (token.getType() == Token.Type.EOF && token.getLexeme().startsWith("Error")) {
-                errorCount++;
-                break;  // Stop if there are errors
-            } else if (token.getType() == Token.Type.WARNING) {
-                warningCount++;
-                // but continue on warnings
-            }
-            
-        } while (token.getType() != Token.Type.EOF);
+        } while (token.getType() != Token.Type.EOF || token.getLexeme().startsWith("Error"));
         
         // Check for missing $ at end of program
         if (!FinalTokenWasEOP && token.getType() == Token.Type.EOF) {
