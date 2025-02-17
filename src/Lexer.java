@@ -210,33 +210,6 @@ public class Lexer {
         return new Token(Token.Type.NUMBER, sb.toString(), line, startColumn);
     }
     
-    private Token handleString() {
-        StringBuilder sb = new StringBuilder();
-        int startColumn = column;
-        
-        // Skip opening quote
-        position++; column++;
-        
-        // main loop for collecting the string
-        while (position < programText.length() && 
-               programText.charAt(position) != '"') {
-                
-            // If we hit a newline or end of programText then the string wasn't closed
-            if (programText.charAt(position) == '\n' || position >= programText.length()) {
-                return new Token(Token.Type.EOF,
-                    String.format("Error: Unclosed string starting at (%d:%d) - missing closing quote", 
-                    line, startColumn),
-                    line, startColumn);
-            }
-            sb.append(programText.charAt(position));
-            position++; column++;
-        }
-        
-        // Skip closing quote
-        position++; column++;
-        
-        return new Token(Token.Type.STRING_LIT, sb.toString(), line, startColumn);
-    }
     
     //  skip whitespace
     private void skipWhitespace() {
