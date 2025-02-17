@@ -3,6 +3,7 @@ public class Lexer {
     private int position;      
     private int line;        
     private int column;       
+    private boolean inString = false;  
     
  
     public Lexer(String programText) {
@@ -76,9 +77,19 @@ public class Lexer {
                 return new Token(Token.Type.RPAREN, ")", line, column - 1);
 
             case '"':
-                return handleString();
+                inString = !inString;
+                position++; column++;
+                return new Token(Token.Type.QUOTE, "\"", line, column - 1);
             
             default:
+                if (inString) {
+                    if (Character.isWhitespace(currentChar)) {
+                        position++; column++;
+                        return new Token(Token.Type.SPACE, " ", line, column - 1);
+                    }
+                    position++; column++;
+                    return new Token(Token.Type.CHAR, String.valueOf(currentChar), line, column - 1);
+                }
                 if (Character.isLetter(currentChar)) {
                     return handleIdentifier();
                 } else if (Character.isDigit(currentChar)) {
