@@ -191,8 +191,8 @@ public class Lexer {
         // main loop for collecting the string
         while (position < input.length() && 
                input.charAt(position) != '"') {
-            // If we hit a newline then thestring wasn't closed
-            if (input.charAt(position) == '\n') {
+            // If we hit a newline or end of input then the string wasn't closed
+            if (input.charAt(position) == '\n' || position >= input.length()) {
                 return new Token(Token.Type.EOF,
                     String.format("Error: Unclosed string starting at (%d:%d) - missing closing quote", 
                     line, startColumn),
@@ -200,14 +200,6 @@ public class Lexer {
             }
             sb.append(input.charAt(position));
             position++; column++;
-        }
-        
-        // Check for unclosed string
-        if (position >= input.length()) {
-            return new Token(Token.Type.EOF,
-                String.format("Error: Unclosed string starting at (%d:%d) - missing closing quote", 
-                line, startColumn),
-                line, startColumn);
         }
         
         // Skip closing quote
