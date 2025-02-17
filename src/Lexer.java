@@ -115,14 +115,14 @@ public class Lexer {
         }
         
         if (!foundEnd) {
-            // unclosed comment warning
-            return new Token(Token.Type.EOF,
-                String.format("Warning: unclosed comment starting at (%d:%d)", 
+            //show a warning but keep going
+            return new Token(Token.Type.WARNING,
+                String.format("Unclosed comment starting at (%d:%d) - comment will be closed", 
                             startLine, startColumn),
                 startLine, startColumn);
         }
         
-        return nextToken(); // Skip comment
+        return nextToken(); // Skip the comment and move on
     }
     
     private Token handleIdentifier() {

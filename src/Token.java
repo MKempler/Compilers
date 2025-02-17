@@ -33,6 +33,7 @@ public class Token {
         COMMENT_START,  
         COMMENT_END,    
         
+        WARNING,
         EOF       
     }
 

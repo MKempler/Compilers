@@ -33,6 +33,9 @@ public class Compiler {
     private void processTokens() {
         Token token;
         int programCount = 1;
+        boolean FinalTokenWasEOP = false;
+        int errorCount = 0;
+        int warningCount = 0;
         
         System.out.println("INFO  Lexer - Lexing program " + programCount + "...");
         
@@ -45,12 +48,35 @@ public class Compiler {
             
             // Check for end of program marker
             if (token.getType() == Token.Type.EOP) {
-                System.out.println("INFO  Lexer - Lex completed with 0 errors");
-                programCount++;
-                System.out.println("INFO  Lexer - Lexing program " + programCount + "...");
+                FinalTokenWasEOP = true;
+                System.out.println("INFO  Lexer - The Lexer finished with " + errorCount + " errors and " + warningCount + " warnings");
+            } else if (token.getType() != Token.Type.EOF) {
+                FinalTokenWasEOP = false;
+            }
+            
+            // Count all errors and warnings
+            if (token.getType() == Token.Type.EOF && token.getLexeme().startsWith("Error")) {
+                errorCount++;
+                break;  // Stop if there are errors
+            } else if (token.getType() == Token.Type.WARNING) {
+                warningCount++;
+                // but continue on warnings
             }
             
         } while (token.getType() != Token.Type.EOF);
+        
+        // Check for missing $ at end of program
+        if (!FinalTokenWasEOP && token.getType() == Token.Type.EOF) {
+            System.out.println("WARNING: Missing $ at end of program " + programCount);
+            warningCount++;
+            System.out.println("INFO  Lexer - The Lexer finished with " + errorCount + " errors and " + warningCount + " warnings");
+        }
+        
+        // final stats
+        System.out.println("\nFinal Stats! :");
+        System.out.println("Total Programs: " + programCount);
+        System.out.println("Total Errors: " + errorCount);
+        System.out.println("Total Warnings: " + warningCount);
     }
     
     // Read input file
