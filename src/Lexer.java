@@ -1,72 +1,83 @@
 public class Lexer {
-    private String input;     
+    private String programText;     
     private int position;      
     private int line;        
     private int column;       
     
  
-    public Lexer(String input) {
-        this.input = input;
-        this.position = 0;
-        this.line = 1;
-        this.column = 1;
+    public Lexer(String programText) {
+        this.programText = programText; //source code
+        this.position = 0; // position we are at in the program
+        this.line = 1; 
+        this.column = 1; 
     }
     
     
     public Token nextToken() {
-        // Skip whitespace and comments
+        // Skip whitespace and comments before the next token
         skipWhitespace();
         
-        // Check if we've reached the end
-        if (position >= input.length()) {
+        // Check if we've reached the end of the program
+        if (position >= programText.length()) {
             return new Token(Token.Type.EOF, "", line, column);
         }
         
-        char currentChar = input.charAt(position);
+        char currentChar = programText.charAt(position);
         
-        // Handle basic symbols 
+        // Handles the different types of tokens
         switch (currentChar) {
+
             case '{':
                 position++; column++;
                 return new Token(Token.Type.OPEN_BLOCK, "{", line, column - 1);
+
             case '}':
                 position++; column++;
                 return new Token(Token.Type.CLOSE_BLOCK, "}", line, column - 1);
+
             case '$':
                 position++; column++;
                 return new Token(Token.Type.EOP, "$", line, column - 1);
+                
             case '/':
-                if (position + 1 < input.length() && input.charAt(position + 1) == '*') {
+                if (position + 1 < programText.length() && programText.charAt(position + 1) == '*') {
                     return handleComment();
                 }
+                
             case '=':
-                if (position + 1 < input.length() && input.charAt(position + 1) == '=') {
+                if (position + 1 < programText.length() && programText.charAt(position + 1) == '=') {
                     position += 2; column += 2;
                     return new Token(Token.Type.EQUALS, "==", line, column - 2);
                 }
                 position++; column++;
                 return new Token(Token.Type.ASSIGN_OP, "=", line, column - 1);
+
             case '!':
-                if (position + 1 < input.length() && input.charAt(position + 1) == '=') {
+                if (position + 1 < programText.length() && programText.charAt(position + 1) == '=') {
                     position += 2; column += 2;
                     return new Token(Token.Type.NOT_EQUALS, "!=", line, column - 2);
                 }
-                // Handle unexpected !
+                // Handle "illegal" !
                 position++; column++;
                 return new Token(Token.Type.EOF, 
                     String.format("Error: Unexpected character '!'", currentChar), 
                     line, column - 1);
+
             case '+':
                 position++; column++;
                 return new Token(Token.Type.PLUS, "+", line, column - 1);
+
             case '(':
                 position++; column++;
                 return new Token(Token.Type.LPAREN, "(", line, column - 1);
+
             case ')':
                 position++; column++;
                 return new Token(Token.Type.RPAREN, ")", line, column - 1);
+
             case '"':
                 return handleString();
+            
             default:
                 if (Character.isLetter(currentChar)) {
                     return handleIdentifier();
@@ -75,7 +86,7 @@ public class Lexer {
                 }
         }
         
-        // Handle unknown
+        // Handle characters that aren't in the grammar
         position++; column++;
         return new Token(Token.Type.EOF, 
             String.format("Error: Unexpected character '%c'", currentChar), 
@@ -93,23 +104,23 @@ public class Lexer {
         boolean foundEnd = false;
         StringBuilder comment = new StringBuilder();
         
-        while (position < input.length() - 1) {
+        while (position < programText.length() - 1) {
             // Check for comment end 
-            if (input.charAt(position) == '*' && input.charAt(position + 1) == '/') {
+            if (programText.charAt(position) == '*' && programText.charAt(position + 1) == '/') {
                 foundEnd = true;
                 position += 2;
                 column += 2;
                 break;
             }
             
-            // Handle newlines
-            if (input.charAt(position) == '\n') {
+            // Handle when the string contains a new line
+            if (programText.charAt(position) == '\n') {
                 line++;
                 column = 1;
                 comment.append('\n');
             } else {
                 column++;
-                comment.append(input.charAt(position));
+                comment.append(programText.charAt(position));
             }
             position++;
         }
@@ -130,28 +141,35 @@ public class Lexer {
         int startColumn = column;
         
         // Collect all letters
-        while (position < input.length() && 
-               Character.isLetter(input.charAt(position))) {
-            sb.append(input.charAt(position));
+        while (position < programText.length() && 
+               Character.isLetter(programText.charAt(position))) {
+            sb.append(programText.charAt(position));
             position++; column++;
         }
-        
+        //converts collected letters into a string
         String word = sb.toString();
         
         // Check for keywords
         switch (word) {
+            //output
             case "print": return new Token(Token.Type.PRINT, word, line, startColumn);
+            //loops
             case "while": return new Token(Token.Type.WHILE, word, line, startColumn);
             case "if": return new Token(Token.Type.IF, word, line, startColumn);
+            //Data types
             case "int": 
             case "string":
             case "boolean": return new Token(Token.Type.I_TYPE, word, line, startColumn);
+            //booleans
             case "true":
             case "false": return new Token(Token.Type.BOOLVAL, word, line, startColumn);
+            
+            //variables
             default: 
                 if (word.length() == 1) {
                     return new Token(Token.Type.ID, word, line, startColumn);
                 } else {
+
                     return new Token(Token.Type.EOF,
                         String.format("Error: Invalid identifier '%s' - must be single letter", word),
                         line, startColumn);
@@ -164,14 +182,14 @@ public class Lexer {
         int startColumn = column;
         
         // Collect the digits
-        while (position < input.length() && 
-               Character.isDigit(input.charAt(position))) {
-            sb.append(input.charAt(position));
+        while (position < programText.length() && 
+               Character.isDigit(programText.charAt(position))) {
+            sb.append(programText.charAt(position));
             position++; column++;
         }
         
         // check if the next char is a letter
-        if (position < input.length() && Character.isLetter(input.charAt(position))) {
+        if (position < programText.length() && Character.isLetter(programText.charAt(position))) {
             return new Token(Token.Type.EOF,
                 String.format("Error: Invalid number format at (%d:%d) - letters cannot immediately follow numbers", 
                             line, startColumn),
@@ -189,16 +207,17 @@ public class Lexer {
         position++; column++;
         
         // main loop for collecting the string
-        while (position < input.length() && 
-               input.charAt(position) != '"') {
-            // If we hit a newline or end of input then the string wasn't closed
-            if (input.charAt(position) == '\n' || position >= input.length()) {
+        while (position < programText.length() && 
+               programText.charAt(position) != '"') {
+                
+            // If we hit a newline or end of programText then the string wasn't closed
+            if (programText.charAt(position) == '\n' || position >= programText.length()) {
                 return new Token(Token.Type.EOF,
                     String.format("Error: Unclosed string starting at (%d:%d) - missing closing quote", 
                     line, startColumn),
                     line, startColumn);
             }
-            sb.append(input.charAt(position));
+            sb.append(programText.charAt(position));
             position++; column++;
         }
         
@@ -210,9 +229,11 @@ public class Lexer {
     
     //  skip whitespace
     private void skipWhitespace() {
-        while (position < input.length() && 
-               Character.isWhitespace(input.charAt(position))) {
-            if (input.charAt(position) == '\n') {
+        //skips any spaces and newlines
+        while (position < programText.length() && 
+               Character.isWhitespace(programText.charAt(position))) {
+                //line number for error tracking
+            if (programText.charAt(position) == '\n') {
                 line++;
                 column = 1;
             } else {
