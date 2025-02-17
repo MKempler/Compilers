@@ -32,12 +32,12 @@ public class Compiler {
     // Process tokens from the lexer
     private void processTokens() {
         Token token;
-        int programCount = 1;
+        int programCount = 0;
         boolean FinalTokenWasEOP = false;
         int errorCount = 0;
         int warningCount = 0;
         
-        System.out.println("INFO  Lexer - Lexing program " + programCount + "...");
+        System.out.println("INFO  Lexer - Lexing program " + (programCount + 1) + "...");
         
         do {
             token = lexer.nextToken();
@@ -59,6 +59,12 @@ public class Compiler {
             if (token.getType() == Token.Type.EOP) {
                 FinalTokenWasEOP = true;
                 System.out.println("INFO  Lexer - The Lexer finished with " + errorCount + " errors and " + warningCount + " warnings");
+                programCount++; 
+                Token nextToken = lexer.nextToken();
+                if (nextToken.getType() != Token.Type.EOF) {  // Only print if there's more input
+                    System.out.println("INFO  Lexer - Lexing program " + (programCount + 1) + "...");
+                }
+                token = nextToken; 
             } else if (token.getType() != Token.Type.EOF) {
                 FinalTokenWasEOP = false;
             }
