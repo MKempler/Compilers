@@ -36,6 +36,7 @@ public class Token {
         
         //error handling
         WARNING,
+        ERROR,
         EOF       
     }
 

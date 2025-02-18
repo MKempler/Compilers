@@ -47,7 +47,7 @@ public class Compiler {
             }
             
             // Count all errors and warnings for stats
-            if (currentToken.getType() == Token.Type.EOF && currentToken.getLexeme().startsWith("Error")) {
+            if (currentToken.getType() == Token.Type.ERROR) {
                 errorCount++;
                 // when an error is hit skip to the next token
                 continue;
@@ -76,8 +76,9 @@ public class Compiler {
         
         // Check for missing $ at end of program
         if (!foundEOP && currentToken.getType() == Token.Type.EOF) {
-            System.out.println("WARNING: Missing $ at end of program " + programCount);
+            System.out.println("WARNING: Missing $ at end of program " + (programCount + 1));
             warningCount++;
+            programCount++;
             System.out.println("INFO  Lexer - The Lexer finished with " + errorCount + " errors and " + warningCount + " warnings");
         }
         

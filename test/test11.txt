@@ -1,4 +1,4 @@
 {
 "this is a bad string tbh
-"if this gets output i'll be sad"
-}$ 
+"I want to sleep"
+}$

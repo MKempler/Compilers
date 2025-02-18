@@ -83,6 +83,13 @@ public class Lexer {
             
             default:
                 if (inString) {
+                    if (programText.charAt(position) == '\n') {
+                        inString = false;
+                        return new Token(Token.Type.ERROR,
+                            String.format("Error: Unclosed string starting at (%d:%d) - missing closing quote", 
+                            line, column),
+                            line, column);
+                    }
                     if (Character.isWhitespace(currentChar)) {
                         position++; column++;
                         return new Token(Token.Type.SPACE, " ", line, column - 1);
@@ -216,7 +223,9 @@ public class Lexer {
         //skips any spaces and newlines
         while (position < programText.length() && 
                Character.isWhitespace(programText.charAt(position))) {
-                //line number for error tracking
+            if (programText.charAt(position) == '\n' && inString) {
+                return; // Don't skip the newline if we are in the string 
+            }
             if (programText.charAt(position) == '\n') {
                 line++;
                 column = 1;
