@@ -2,12 +2,12 @@
 
 ## Setup:
 1. cd src
-2. javac *.java
-3. java Compiler ../test/<input_file>
+2. Compile: javac *.java
+3. Run tests: java Compiler ../test/<input_file>
 
 ## My test files:
 - test1.txt: Empty file test
-- test2.txt: Comment test 
+- test2.txt: normal comment test 
 - test3.txt: Unclosed comment detection 
 - test4.txt: Keywords and identifiers 
 - test5.txt: Operators 
@@ -15,10 +15,14 @@
 - test7.txt: Multiple programs 
 - test8.txt: Number validation 
 - test9.txt: Parentheses 
-- test10.txt: Basic Strings 
-- test11.txt: String errors 
+- test10.txt: regular strings/ bad character test
+- test11.txt: String missing closing quote with valid string after it
+- test12.txt: Comment in the middle of a string
 
 ### All test cases passed
+
+## Project 1 Reflection
+I genuinly enjoyed working through this project, and while I feel good about how it turned out, I unfortunately procrastinated a lot with getting started on this project which I regret. As a result, I spent v e r y long hours over a few days working on it when I should have just started earlier. While it was very diffucult I liked how this project kind of forced incremental development, which is why I recognize I should have started early. Moving to project 2 I will defeintely start earlier and work in smaller chunks day by day. 
 
 ## AI usage:
 

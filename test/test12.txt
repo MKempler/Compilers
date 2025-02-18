@@ -1,0 +1,2 @@
+"i wonder what /* will this mess up the string */  will happen"
+$

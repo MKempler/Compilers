@@ -94,11 +94,23 @@ public class Lexer {
                         position++; column++;
                         return new Token(Token.Type.SPACE, " ", line, column - 1);
                     }
+                    if (currentChar >= 'a' && currentChar <= 'z') {
+                        position++; column++;
+                        return new Token(Token.Type.CHAR, String.valueOf(currentChar), line, column - 1);
+                    }
                     position++; column++;
-                    return new Token(Token.Type.CHAR, String.valueOf(currentChar), line, column - 1);
+                    return new Token(Token.Type.ERROR,
+                        String.format("Error: Unexpected character '%c' - Uppercase letters are invlaid and evil ", 
+                        currentChar), line, column - 1);
                 }
-                if (Character.isLetter(currentChar)) {
+                if (currentChar >= 'a' && currentChar <= 'z') {
                     return handleIdentifier();
+                } else if (Character.isLetter(currentChar)) {
+                    position++; column++;
+
+                    return new Token(Token.Type.ERROR,
+                        String.format("Error: Unexpected character '%c' - Uppercase letters are invalid and evil", 
+                        currentChar), line, column - 1);
                 } else if (Character.isDigit(currentChar)) {
                     return handleNumber();
                 }
@@ -106,7 +118,7 @@ public class Lexer {
         
         // Handle characters that aren't in the grammar
         position++; column++;
-        return new Token(Token.Type.EOF, 
+        return new Token(Token.Type.ERROR, 
             String.format("Error: Unexpected character '%c'", currentChar), 
             line, column - 1);
     }
@@ -188,7 +200,7 @@ public class Lexer {
                     return new Token(Token.Type.ID, word, line, startColumn);
                 } else {
 
-                    return new Token(Token.Type.EOF,
+                    return new Token(Token.Type.ERROR,
                         String.format("Error: Invalid identifier '%s' - must be single letter", word),
                         line, startColumn);
                 }
