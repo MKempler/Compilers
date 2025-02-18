@@ -90,7 +90,7 @@ public class Lexer {
                             line, column),
                             line, column);
                     }
-                    if (Character.isWhitespace(currentChar)) {
+                    if (currentChar == ' ') {
                         position++; column++;
                         return new Token(Token.Type.SPACE, " ", line, column - 1);
                     }
@@ -220,11 +220,10 @@ public class Lexer {
     
     //  skip whitespace
     private void skipWhitespace() {
-        //skips any spaces and newlines
         while (position < programText.length() && 
                Character.isWhitespace(programText.charAt(position))) {
-            if (programText.charAt(position) == '\n' && inString) {
-                return; // Don't skip the newline if we are in the string 
+            if (inString) {
+                return; // Don't skip any whitespace in strings
             }
             if (programText.charAt(position) == '\n') {
                 line++;
