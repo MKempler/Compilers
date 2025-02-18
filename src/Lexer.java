@@ -90,27 +90,39 @@ public class Lexer {
                             line, column),
                             line, column);
                     }
+
                     if (currentChar == ' ') {
                         position++; column++;
                         return new Token(Token.Type.SPACE, " ", line, column - 1);
                     }
+
                     if (currentChar >= 'a' && currentChar <= 'z') {
                         position++; column++;
                         return new Token(Token.Type.CHAR, String.valueOf(currentChar), line, column - 1);
                     }
                     position++; column++;
+                    
+                    if (Character.isDigit(currentChar)) {
+                        return new Token(Token.Type.ERROR,
+                            String.format("Error: Unexpected character '%c' - numbers are not allowed in strings", 
+                            currentChar), line, column - 1);
+                    }
+
                     return new Token(Token.Type.ERROR,
                         String.format("Error: Unexpected character '%c' - Uppercase letters are invlaid and evil ", 
                         currentChar), line, column - 1);
                 }
+                
                 if (currentChar >= 'a' && currentChar <= 'z') {
                     return handleIdentifier();
+
                 } else if (Character.isLetter(currentChar)) {
                     position++; column++;
 
                     return new Token(Token.Type.ERROR,
                         String.format("Error: Unexpected character '%c' - Uppercase letters are invalid and evil", 
                         currentChar), line, column - 1);
+                        
                 } else if (Character.isDigit(currentChar)) {
                     return handleNumber();
                 }
