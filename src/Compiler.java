@@ -1,6 +1,8 @@
 public class Compiler {
     private Lexer lexer;
+    private Parser parser;
     private boolean verboseMode = true;  //always true for debugging
+    private String programText; 
 
    
     public static void main(String[] args) {
@@ -16,7 +18,7 @@ public class Compiler {
     public void compile(String fileName) {
         try {
             // Read the programText file
-            String programText = readFile(fileName);
+            programText = readFile(fileName);
             
             // Creates the lexer
             lexer = new Lexer(programText);
@@ -60,6 +62,32 @@ public class Compiler {
             if (currentToken.getType() == Token.Type.EOP) {
                 foundEOP = true;
                 System.out.println("INFO  Lexer - The Lexer finished with " + errorCount + " errors and " + warningCount + " warnings");
+                
+                // If there are no errors begin parsing
+                if (errorCount == 0) {
+                    // Create a new lexer with the same program text
+                    Lexer parserLexer = new Lexer(programText);
+                    
+                    // Parse
+                    System.out.println("PARSER: Parsing program " + (programCount + 1) + "...");
+                    parser = new Parser(parserLexer);
+                    parser.setVerboseMode(verboseMode);
+                    
+                    // Get the CST
+                    CSTNode cstRoot = parser.parse();
+                    
+                    // If parsing was successful display the CST
+                    if (parser.getErrorCount() == 0) {
+                        System.out.println("CST for program " + (programCount + 1) + "...");
+                        cstRoot.display();
+                    } else {
+                        System.out.println("CST for program " + (programCount + 1) + ": Skipped due to PARSER error(s).");
+                    }
+                } else {
+                    System.out.println("PARSER: Skipped due to LEXER error(s)");
+                    System.out.println("CST for program " + (programCount + 1) + ": Skipped due to LEXER error(s).");
+                }
+                
                 programCount++; 
                 Token nextToken = lexer.nextToken();
 
