@@ -4,6 +4,8 @@ public class Lexer {
     private int line;        
     private int column;       
     private boolean inString = false;  
+    private int stringStartLine;
+    private int stringStartColumn;
     
  
     public Lexer(String programText) {
@@ -33,10 +35,24 @@ public class Lexer {
                 return new Token(Token.Type.OPEN_BLOCK, "{", line, column - 1);
 
             case '}':
+                if (inString) {
+                    inString = false;
+                    return new Token(Token.Type.ERROR,
+                        String.format("Error: Unclosed string starting at (%d:%d) - missing closing quote", 
+                        stringStartLine, stringStartColumn),
+                        stringStartLine, stringStartColumn);
+                }
                 position++; column++;
                 return new Token(Token.Type.CLOSE_BLOCK, "}", line, column - 1);
 
             case '$':
+                if (inString) {
+                    inString = false;
+                    return new Token(Token.Type.ERROR,
+                        String.format("Error: Unclosed string starting at (%d:%d) - missing closing quote", 
+                        stringStartLine, stringStartColumn),
+                        stringStartLine, stringStartColumn);
+                }
                 position++; column++;
                 return new Token(Token.Type.EOP, "$", line, column - 1);
                 
@@ -77,18 +93,28 @@ public class Lexer {
                 return new Token(Token.Type.RPAREN, ")", line, column - 1);
 
             case '"':
-                inString = !inString;
-                position++; column++;
-                return new Token(Token.Type.QUOTE, "\"", line, column - 1);
+                if (!inString) {
+                    // Opening quote
+                    stringStartLine = line;
+                    stringStartColumn = column;
+                    inString = true;
+                    position++; column++;
+                    return new Token(Token.Type.QUOTE, "\"", line, column - 1);
+                } else {
+                    // Closing quote
+                    inString = false;
+                    position++; column++;
+                    return new Token(Token.Type.QUOTE, "\"", line, column - 1);
+                }
             
             default:
                 if (inString) {
-                    if (programText.charAt(position) == '\n') {
+                    if (programText.charAt(position) == '\n' || position >= programText.length()) {
                         inString = false;
                         return new Token(Token.Type.ERROR,
                             String.format("Error: Unclosed string starting at (%d:%d) - missing closing quote", 
-                            line, column),
-                            line, column);
+                            stringStartLine, stringStartColumn),
+                            stringStartLine, stringStartColumn);
                     }
 
                     if (currentChar == ' ') {
