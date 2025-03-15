@@ -58,8 +58,13 @@ public class Parser {
         
         //handle blocks
         if (match(Token.Type.OPEN_BLOCK)) {
+            // Block statement
             CSTNode blockNode = parseBlock();
             statementNode.addChild(blockNode);
+        } else if (match(Token.Type.PRINT)) {
+            // Print statement
+            CSTNode printNode = parsePrintStatement();
+            statementNode.addChild(printNode);
         } else {
             reportError("Expected a statement");
         }
@@ -104,9 +109,9 @@ public class Parser {
         
         CSTNode statementListNode = new CSTNode("Statement List");
         
-        // checks if the current token could start a statement
-        if (match(Token.Type.OPEN_BLOCK)) {
-            
+         // checks if the current token could start a statement
+        if (match(Token.Type.OPEN_BLOCK) || match(Token.Type.PRINT)) {
+            // Parse statement
             CSTNode statementNode = parseStatement();
             statementListNode.addChild(statementNode);
             
@@ -144,5 +149,16 @@ public class Parser {
     
     public void setVerboseMode(boolean verboseMode) {
         this.verboseMode = verboseMode;
+    }
+    
+    private CSTNode parsePrintStatement() {
+        if (verboseMode) {
+            System.out.println("PARSER: parsePrintStatement()");
+        }
+        
+        // print statement node
+        CSTNode printNode = new CSTNode("Print Statement");
+
+        return printNode;
     }
 } 
