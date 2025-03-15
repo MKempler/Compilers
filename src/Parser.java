@@ -15,7 +15,7 @@ public class Parser {
             System.out.println("PARSER: parse()");
         }
         
-        // ztart parsing from the Program rule
+        // Start parsing from the Program rule
         CSTNode rootNode = parseProgram();
         
         if (errorCount == 0) {
@@ -47,6 +47,24 @@ public class Parser {
         }
         
         return programNode;
+    }
+    
+    private CSTNode parseStatement() {
+        if (verboseMode) {
+            System.out.println("PARSER: parseStatement()");
+        }
+        
+        CSTNode statementNode = new CSTNode("Statement");
+        
+        //handle blocks
+        if (match(Token.Type.OPEN_BLOCK)) {
+            CSTNode blockNode = parseBlock();
+            statementNode.addChild(blockNode);
+        } else {
+            reportError("Expected a statement");
+        }
+        
+        return statementNode;
     }
     
     private CSTNode parseBlock() {
@@ -86,6 +104,20 @@ public class Parser {
         
         CSTNode statementListNode = new CSTNode("Statement List");
         
+        // checks if the current token could start a statement
+        if (match(Token.Type.OPEN_BLOCK)) {
+            
+            CSTNode statementNode = parseStatement();
+            statementListNode.addChild(statementNode);
+            
+            // parse the rest of the statement list
+            CSTNode restOfStatements = parseStatementList();
+            
+            // Add children from the rest of the statements
+            for (CSTNode child : restOfStatements.getChildren()) {
+                statementListNode.addChild(child);
+            }
+        }
         
         return statementListNode;
     }
