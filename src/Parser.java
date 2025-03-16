@@ -210,6 +210,14 @@ public class Parser {
             // String
             CSTNode stringExprNode = parseStringExpr();
             exprNode.addChild(stringExprNode);
+        } else if (match(Token.Type.BOOLVAL)) {
+            // Boolean literal 
+            CSTNode booleanExprNode = parseBooleanExpr();
+            exprNode.addChild(booleanExprNode);
+        } else if (match(Token.Type.LPAREN)) {
+            // boolean expression
+            CSTNode booleanExprNode = parseParenBooleanExpr();
+            exprNode.addChild(booleanExprNode);
         } else {
            
         }
@@ -305,5 +313,69 @@ public class Parser {
         }
         
         return stringExprNode;
+    }
+    
+    // Booleans
+    private CSTNode parseBooleanExpr() {
+        if (verboseMode) {
+            System.out.println("PARSER: parseBooleanExpr()");
+        }
+        
+        CSTNode booleanExprNode = new CSTNode("Boolean Expression");
+        
+        if (match(Token.Type.BOOLVAL)) {
+            booleanExprNode.addChild(new CSTNode(currentToken.getLexeme(), currentToken));
+            nextToken();
+        } else {
+            reportError("Expected a boolean value (true or false)");
+        }
+        
+        return booleanExprNode;
+    }
+    
+    // BooleanExpr
+    private CSTNode parseParenBooleanExpr() {
+        if (verboseMode) {
+            System.out.println("PARSER: parseParenBooleanExpr()");
+        }
+        
+        CSTNode booleanExprNode = new CSTNode("Boolean Expression");
+        
+        // Handle opening parenthesis
+        if (match(Token.Type.LPAREN)) {
+            booleanExprNode.addChild(new CSTNode("(", currentToken));
+            nextToken();
+            
+            // Parse left expression
+            CSTNode leftExpr = parseExpr();
+            booleanExprNode.addChild(leftExpr);
+            
+            // Parse  operator
+            if (match(Token.Type.EQUALS) || match(Token.Type.NOT_EQUALS)) {
+                String operator = currentToken.getType() == Token.Type.EQUALS ? "==" : "!=";
+                booleanExprNode.addChild(new CSTNode(operator, currentToken));
+                nextToken();
+                
+                // Parse right expression
+                CSTNode rightExpr = parseExpr();
+                booleanExprNode.addChild(rightExpr);
+                
+                // Handle closing parenthesis
+                if (match(Token.Type.RPAREN)) {
+                    booleanExprNode.addChild(new CSTNode(")", currentToken));
+                    nextToken();
+
+                } else {
+                    reportError("Expected closing parenthesis ')'");
+                }
+                
+            } else {
+                reportError("Expected boolean operator (== or !=)");
+            }
+        } else {
+            reportError("Expected opening parenthesis '('");
+        }
+        
+        return booleanExprNode;
     }
 } 
