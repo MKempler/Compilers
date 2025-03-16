@@ -167,7 +167,11 @@ public class Parser {
             if (match(Token.Type.LPAREN)) {
                 printNode.addChild(new CSTNode("(", currentToken));
                 nextToken();
-               
+                
+                // Parse expression inside the parentheses
+                CSTNode exprNode = parseExpr();
+                printNode.addChild(exprNode);
+                
                 // closing parenthesis
                 if (match(Token.Type.RPAREN)) {
                     printNode.addChild(new CSTNode(")", currentToken));
@@ -183,5 +187,42 @@ public class Parser {
         }
         
         return printNode;
+    }
+    
+    // Expr 
+    private CSTNode parseExpr() {
+        if (verboseMode) {
+            System.out.println("PARSER: parseExpr()");
+        }
+        
+        CSTNode exprNode = new CSTNode("Expression");
+        
+        if (match(Token.Type.ID)) {
+            CSTNode idNode = parseId();
+            exprNode.addChild(idNode);
+            
+        } else {
+            
+        }
+        
+        return exprNode;
+    }
+    
+    // char
+    private CSTNode parseId() {
+        if (verboseMode) {
+            System.out.println("PARSER: parseId()");
+        }
+        
+        CSTNode idNode = new CSTNode("Identifier");
+        
+        if (match(Token.Type.ID)) {
+            idNode.addChild(new CSTNode(currentToken.getLexeme(), currentToken));
+            nextToken();
+        } else {
+            reportError("Expected an identifier");
+        }
+        
+        return idNode;
     }
 } 
