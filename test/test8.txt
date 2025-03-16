@@ -1,0 +1,22 @@
+{
+int x
+  x = 5
+  
+  if (x == 5) {
+    print("x is five")
+    
+    {
+      print("nested block")
+    }
+  }
+  
+  while true {
+    print("in loop")
+    
+    if (x == 5) {
+      print("still five")
+    }
+    
+    x = 0
+  }
+}$ 
