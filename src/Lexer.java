@@ -205,44 +205,67 @@ public class Lexer {
     }
     
     private Token handleIdentifier() {
-        StringBuilder sb = new StringBuilder();
         int startColumn = column;
         
-        // Collect all letters
-        while (position < programText.length() && 
-               Character.isLetter(programText.charAt(position))) {
+        // Check for any keywords first
+        if (position + 3 <= programText.length() && programText.substring(position, position + 3).equals("int")) {
+            position += 3; column += 3;
+            return new Token(Token.Type.I_TYPE, "int", line, startColumn);
+        }
+        
+        if (position + 6 <= programText.length() && programText.substring(position, position + 6).equals("string")) {
+            position += 6; column += 6;
+            return new Token(Token.Type.I_TYPE, "string", line, startColumn);
+        }
+        
+        if (position + 7 <= programText.length() && programText.substring(position, position + 7).equals("boolean")) {
+            position += 7; column += 7;
+            return new Token(Token.Type.I_TYPE, "boolean", line, startColumn);
+        }
+        
+        if (position + 5 <= programText.length() && programText.substring(position, position + 5).equals("print")) {
+            position += 5; column += 5;
+            return new Token(Token.Type.PRINT, "print", line, startColumn);
+        }
+        
+        if (position + 5 <= programText.length() && programText.substring(position, position + 5).equals("while")) {
+            position += 5; column += 5;
+            return new Token(Token.Type.WHILE, "while", line, startColumn);
+        }
+        
+        if (position + 2 <= programText.length() && programText.substring(position, position + 2).equals("if")) {
+            position += 2; column += 2;
+            return new Token(Token.Type.IF, "if", line, startColumn);
+        }
+        
+        if (position + 4 <= programText.length() && programText.substring(position, position + 4).equals("true")) {
+            position += 4; column += 4;
+            return new Token(Token.Type.BOOLVAL, "true", line, startColumn);
+        }
+        
+        if (position + 5 <= programText.length() && programText.substring(position, position + 5).equals("false")) {
+            position += 5; column += 5;
+            return new Token(Token.Type.BOOLVAL, "false", line, startColumn);
+        }
+        
+        // If it's not a keyword thenit's a single char identifier
+        if (position < programText.length() && programText.charAt(position) >= 'a' && programText.charAt(position) <= 'z') {
+            char id = programText.charAt(position);
+            position++; column++;
+            return new Token(Token.Type.ID, String.valueOf(id), line, startColumn);
+        }
+        
+        // otherwise error
+        StringBuilder sb = new StringBuilder();
+        while (position < programText.length() && Character.isLetter(programText.charAt(position))) {
             sb.append(programText.charAt(position));
             position++; column++;
         }
-        //converts collected letters into a string
         String word = sb.toString();
         
-        // Check for keywords
-        switch (word) {
-            //output
-            case "print": return new Token(Token.Type.PRINT, word, line, startColumn);
-            //loops
-            case "while": return new Token(Token.Type.WHILE, word, line, startColumn);
-            case "if": return new Token(Token.Type.IF, word, line, startColumn);
-            //Data types
-            case "int": 
-            case "string":
-            case "boolean": return new Token(Token.Type.I_TYPE, word, line, startColumn);
-            //booleans
-            case "true":
-            case "false": return new Token(Token.Type.BOOLVAL, word, line, startColumn);
-            
-            //variables
-            default: 
-                if (word.length() == 1) {
-                    return new Token(Token.Type.ID, word, line, startColumn);
-                } else {
-
-                    return new Token(Token.Type.ERROR,
-                        String.format("Error: Invalid identifier '%s' - must be single letter", word),
-                        line, startColumn);
-                }
-        }
+        return new Token(Token.Type.ERROR,
+            String.format("Error: Invalid identifier '%s' - must be single letter", word),
+            line, startColumn);
     }
     
     private Token handleNumber() {
