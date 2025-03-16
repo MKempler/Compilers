@@ -1,0 +1,17 @@
+{
+    print("hello")
+}$
+{
+    int x
+    x = 42
+    print(X)  /* Error: uppercase X */
+}$
+{
+    if true {
+        print("true")
+        print("123")  /* Error: numbers not allowed in strings */
+    }
+}$
+{
+    /* Unclosed comment
+}$ 
