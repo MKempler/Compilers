@@ -1,2 +1,5 @@
-"Hello world 4"
-$
+{
+  int x
+  string y
+  boolean z
+}$ 

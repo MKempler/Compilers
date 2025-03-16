@@ -65,6 +65,10 @@ public class Parser {
             // Print statement
             CSTNode printNode = parsePrintStatement();
             statementNode.addChild(printNode);
+        } else if (match(Token.Type.I_TYPE)) {
+            // Variable declaration
+            CSTNode varDeclNode = parseVarDecl();
+            statementNode.addChild(varDeclNode);
         } else {
             reportError("Expected a statement");
         }
@@ -110,7 +114,7 @@ public class Parser {
         CSTNode statementListNode = new CSTNode("Statement List");
         
          // checks if the current token could start a statement
-        if (match(Token.Type.OPEN_BLOCK) || match(Token.Type.PRINT)) {
+        if (match(Token.Type.OPEN_BLOCK) || match(Token.Type.PRINT) || match(Token.Type.I_TYPE)) {
             // Parse statement
             CSTNode statementNode = parseStatement();
             statementListNode.addChild(statementNode);
@@ -377,5 +381,28 @@ public class Parser {
         }
         
         return booleanExprNode;
+    }
+    
+    // Var
+    private CSTNode parseVarDecl() {
+        if (verboseMode) {
+            System.out.println("PARSER: parseVarDecl()");
+        }
+        
+        CSTNode varDeclNode = new CSTNode("Variable Declaration");
+        
+        // Handle type 
+        if (match(Token.Type.I_TYPE)) {
+            varDeclNode.addChild(new CSTNode(currentToken.getLexeme(), currentToken));
+            nextToken();
+            
+            // Handle identifier
+            CSTNode idNode = parseId();
+            varDeclNode.addChild(idNode);
+        } else {
+            reportError("Expected a type (int, string, or boolean)");
+        }
+        
+        return varDeclNode;
     }
 } 
