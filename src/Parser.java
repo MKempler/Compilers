@@ -163,6 +163,21 @@ public class Parser {
             printNode.addChild(new CSTNode("print", currentToken));
             nextToken();
             
+            //  opening parenthesis
+            if (match(Token.Type.LPAREN)) {
+                printNode.addChild(new CSTNode("(", currentToken));
+                nextToken();
+               
+                // closing parenthesis
+                if (match(Token.Type.RPAREN)) {
+                    printNode.addChild(new CSTNode(")", currentToken));
+                    nextToken();
+                } else {
+                    reportError("Expected closing parenthesis ')'");
+                }
+            } else {
+                reportError("Expected opening parenthesis '('");
+            }
         } else {
             reportError("Expected 'print' keyword");
         }
