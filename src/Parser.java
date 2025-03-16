@@ -73,6 +73,10 @@ public class Parser {
             // Assignment statement
             CSTNode assignmentNode = parseAssignmentStatement();
             statementNode.addChild(assignmentNode);
+        } else if (match(Token.Type.IF)) {
+            // If statement
+            CSTNode ifNode = parseIfStatement();
+            statementNode.addChild(ifNode);
         } else {
             reportError("Expected a statement");
         }
@@ -119,7 +123,7 @@ public class Parser {
         
          // checks if the current token could start a statement
         if (match(Token.Type.OPEN_BLOCK) || match(Token.Type.PRINT) || 
-            match(Token.Type.I_TYPE) || match(Token.Type.ID)) {
+            match(Token.Type.I_TYPE) || match(Token.Type.ID) || match(Token.Type.IF)) {
             // Parse statement
             CSTNode statementNode = parseStatement();
             statementListNode.addChild(statementNode);
@@ -436,5 +440,39 @@ public class Parser {
         }
         
         return assignmentNode;
+    }
+    
+    // If Statement
+    private CSTNode parseIfStatement() {
+        if (verboseMode) {
+            System.out.println("PARSER: parseIfStatement()");
+        }
+        
+        CSTNode ifNode = new CSTNode("If Statement");
+        
+        //if keyword
+        if (match(Token.Type.IF)) {
+            ifNode.addChild(new CSTNode("if", currentToken));
+            nextToken();
+        
+            if (match(Token.Type.BOOLVAL)) {
+                CSTNode boolExpr = parseBooleanExpr();
+                ifNode.addChild(boolExpr);
+            
+            } else if (match(Token.Type.LPAREN)) {
+                CSTNode boolExpr = parseParenBooleanExpr();
+                ifNode.addChild(boolExpr);
+            } else {
+                reportError("Expected a boolean expression");
+            }
+            
+            // Parse block
+            CSTNode blockNode = parseBlock();
+            ifNode.addChild(blockNode);
+        } else {
+            reportError("Expected 'if' keyword");
+        }
+        
+        return ifNode;
     }
 } 
