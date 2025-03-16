@@ -69,6 +69,10 @@ public class Parser {
             // Variable declaration
             CSTNode varDeclNode = parseVarDecl();
             statementNode.addChild(varDeclNode);
+        } else if (match(Token.Type.ID)) {
+            // Assignment statement
+            CSTNode assignmentNode = parseAssignmentStatement();
+            statementNode.addChild(assignmentNode);
         } else {
             reportError("Expected a statement");
         }
@@ -114,7 +118,8 @@ public class Parser {
         CSTNode statementListNode = new CSTNode("Statement List");
         
          // checks if the current token could start a statement
-        if (match(Token.Type.OPEN_BLOCK) || match(Token.Type.PRINT) || match(Token.Type.I_TYPE)) {
+        if (match(Token.Type.OPEN_BLOCK) || match(Token.Type.PRINT) || 
+            match(Token.Type.I_TYPE) || match(Token.Type.ID)) {
             // Parse statement
             CSTNode statementNode = parseStatement();
             statementListNode.addChild(statementNode);
@@ -404,5 +409,32 @@ public class Parser {
         }
         
         return varDeclNode;
+    }
+    
+    // AssignmentStatement
+    private CSTNode parseAssignmentStatement() {
+        if (verboseMode) {
+            System.out.println("PARSER: parseAssignmentStatement()");
+        }
+        
+        CSTNode assignmentNode = new CSTNode("Assignment Statement");
+        
+        // Handle identifier
+        CSTNode idNode = parseId();
+        assignmentNode.addChild(idNode);
+        
+        // Handle assignment operator
+        if (match(Token.Type.ASSIGN_OP)) {
+            assignmentNode.addChild(new CSTNode("=", currentToken));
+            nextToken();
+            
+            // Handle expression
+            CSTNode exprNode = parseExpr();
+            assignmentNode.addChild(exprNode);
+        } else {
+            reportError("Expected assignment operator (=)");
+        }
+        
+        return assignmentNode;
     }
 } 
