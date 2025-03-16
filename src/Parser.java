@@ -197,15 +197,50 @@ public class Parser {
         
         CSTNode exprNode = new CSTNode("Expression");
         
+        // Check what type of expression we have
         if (match(Token.Type.ID)) {
+            // Identifier
             CSTNode idNode = parseId();
             exprNode.addChild(idNode);
-            
+        } else if (match(Token.Type.NUMBER)) {
+            // Int
+            CSTNode intExprNode = parseIntExpr();
+            exprNode.addChild(intExprNode);
         } else {
-            
+           
         }
         
         return exprNode;
+    }
+    
+    // IntExpr
+    private CSTNode parseIntExpr() {
+        if (verboseMode) {
+            System.out.println("PARSER: parseIntExpr()");
+        }
+        
+        CSTNode intExprNode = new CSTNode("Integer Expression");
+        
+        // Handle a digit
+        if (match(Token.Type.NUMBER)) {
+            intExprNode.addChild(new CSTNode(currentToken.getLexeme(), currentToken));
+            nextToken();
+            
+            // Check if there's a + operator
+            if (match(Token.Type.PLUS)) {
+                // Add the operator
+                intExprNode.addChild(new CSTNode("+", currentToken));
+                nextToken();
+                
+                // Parse the right side of the operation
+                CSTNode rightExpr = parseExpr();
+                intExprNode.addChild(rightExpr);
+            }
+        } else {
+            reportError("Expected a number");
+        }
+        
+        return intExprNode;
     }
     
     // char
