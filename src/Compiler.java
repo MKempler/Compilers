@@ -39,6 +39,9 @@ public class Compiler {
         int errorCount = 0;
         int warningCount = 0;
         int programStartPos = 0;
+        int totalLexerErrors = 0;
+        int totalLexerWarnings = 0;
+        int totalParserErrors = 0;
         
         System.out.println("INFO  Lexer - Lexing program " + (programCount + 1) + "...");
         
@@ -52,11 +55,13 @@ public class Compiler {
             // Count all errors and warnings for stats
             if (currentToken.getType() == Token.Type.ERROR) {
                 errorCount++;
+                totalLexerErrors++;
                 // when an error is hit skip to the next token
                 continue;
 
             } else if (currentToken.getType() == Token.Type.WARNING) {
                 warningCount++; // skip to next token after warning
+                totalLexerWarnings++;
             }
             
             // Check if the current token is the end of a program
@@ -87,6 +92,7 @@ public class Compiler {
                         cstRoot.display();
                     } else {
                         System.out.println("CST for program " + (programCount + 1) + ": Skipped due to PARSER error(s).");
+                        totalParserErrors += parser.getErrorCount();
                     }
                 } else {
                     System.out.println("PARSER: Skipped due to LEXER error(s)");
@@ -117,6 +123,7 @@ public class Compiler {
         if (!foundEOP && currentToken.getType() == Token.Type.EOF) {
             System.out.println("WARNING: Missing $ at end of program " + (programCount + 1));
             warningCount++;
+            totalLexerWarnings++;
             programCount++;
             System.out.println("INFO  Lexer - The Lexer finished with " + errorCount + " errors and " + warningCount + " warnings");
         }
@@ -124,8 +131,11 @@ public class Compiler {
         // final stats
         System.out.println("\nFinal Stats!:");
         System.out.println("Total Programs: " + programCount);
-        System.out.println("Total Errors: " + errorCount);
-        System.out.println("Total Warnings: " + warningCount);
+        System.out.println("Total Lexer Errors: " + totalLexerErrors);
+        System.out.println("Total Lexer Warnings: " + totalLexerWarnings);
+        System.out.println("Total Parser Errors: " + totalParserErrors);
+        System.out.println("Total Errors: " + (totalLexerErrors + totalParserErrors));
+        System.out.println("Total Warnings: " + totalLexerWarnings);
     }
     
     // Reads the programText and returns it's contents as a string
