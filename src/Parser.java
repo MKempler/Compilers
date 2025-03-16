@@ -77,6 +77,10 @@ public class Parser {
             // If statement
             CSTNode ifNode = parseIfStatement();
             statementNode.addChild(ifNode);
+        } else if (match(Token.Type.WHILE)) {
+            // While statement
+            CSTNode whileNode = parseWhileStatement();
+            statementNode.addChild(whileNode);
         } else {
             reportError("Expected a statement");
         }
@@ -123,7 +127,8 @@ public class Parser {
         
          // checks if the current token could start a statement
         if (match(Token.Type.OPEN_BLOCK) || match(Token.Type.PRINT) || 
-            match(Token.Type.I_TYPE) || match(Token.Type.ID) || match(Token.Type.IF)) {
+            match(Token.Type.I_TYPE) || match(Token.Type.ID) || 
+            match(Token.Type.IF) || match(Token.Type.WHILE)) {
             // Parse statement
             CSTNode statementNode = parseStatement();
             statementListNode.addChild(statementNode);
@@ -474,5 +479,39 @@ public class Parser {
         }
         
         return ifNode;
+    }
+    
+    // WhileStatement
+    private CSTNode parseWhileStatement() {
+        if (verboseMode) {
+            System.out.println("PARSER: parseWhileStatement()");
+        }
+        
+        CSTNode whileNode = new CSTNode("While Statement");
+        
+        // while
+        if (match(Token.Type.WHILE)) {
+            whileNode.addChild(new CSTNode("while", currentToken));
+            nextToken();
+            
+            if (match(Token.Type.BOOLVAL)) {
+                CSTNode boolExpr = parseBooleanExpr();
+                whileNode.addChild(boolExpr);
+                
+            } else if (match(Token.Type.LPAREN)) {
+                CSTNode boolExpr = parseParenBooleanExpr();
+                whileNode.addChild(boolExpr);
+            } else {
+                reportError("Expected a boolean expression");
+            }
+            
+            // Parse block
+            CSTNode blockNode = parseBlock();
+            whileNode.addChild(blockNode);
+        } else {
+            reportError("Expected 'while' keyword");
+        }
+        
+        return whileNode;
     }
 } 

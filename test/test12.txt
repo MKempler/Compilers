@@ -1,2 +1,13 @@
-"i wonder what /* will this mess up the string */  will happen"
-$
+{
+  int count
+  count = 0
+  
+  while true {
+    print("looping forever")
+  }
+  
+  while (count==0) {
+    print("count is zero")
+    count = 1
+  }
+}$ 

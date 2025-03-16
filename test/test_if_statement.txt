@@ -1,9 +1,0 @@
-{
-  if true {
-    print("condition is true")
-  }
-  
-  if (4==4) {
-    print("numbers are equal")
-  }
-}$ 
