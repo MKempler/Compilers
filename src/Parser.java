@@ -10,6 +10,7 @@ public class Parser {
         this.currentToken = lexer.nextToken();
     }
     
+    // parse the program and return the CST
     public CSTNode parse() {
         if (verboseMode) {
             System.out.println("PARSER: parse()");
@@ -61,26 +62,32 @@ public class Parser {
             // Block statement
             CSTNode blockNode = parseBlock();
             statementNode.addChild(blockNode);
+
         } else if (match(Token.Type.PRINT)) {
             // Print statement
             CSTNode printNode = parsePrintStatement();
             statementNode.addChild(printNode);
+
         } else if (match(Token.Type.I_TYPE)) {
             // Variable declaration
             CSTNode varDeclNode = parseVarDecl();
             statementNode.addChild(varDeclNode);
+
         } else if (match(Token.Type.ID)) {
             // Assignment statement
             CSTNode assignmentNode = parseAssignmentStatement();
             statementNode.addChild(assignmentNode);
+
         } else if (match(Token.Type.IF)) {
             // If statement
             CSTNode ifNode = parseIfStatement();
             statementNode.addChild(ifNode);
+
         } else if (match(Token.Type.WHILE)) {
             // While statement
             CSTNode whileNode = parseWhileStatement();
             statementNode.addChild(whileNode);
+
         } else {
             reportError("Expected a statement");
         }
@@ -133,7 +140,6 @@ public class Parser {
             CSTNode statementNode = parseStatement();
             statementListNode.addChild(statementNode);
             
-            // parse the rest of the statement list
             CSTNode restOfStatements = parseStatementList();
             
             // Add children from the rest of the statements
@@ -174,7 +180,7 @@ public class Parser {
             System.out.println("PARSER: parsePrintStatement()");
         }
         
-        // print statement node
+        // print statement
         CSTNode printNode = new CSTNode("Print Statement");
         
         if (match(Token.Type.PRINT)) {
@@ -220,22 +226,27 @@ public class Parser {
             // Identifier
             CSTNode idNode = parseId();
             exprNode.addChild(idNode);
+        
         } else if (match(Token.Type.NUMBER)) {
             // Int
             CSTNode intExprNode = parseIntExpr();
             exprNode.addChild(intExprNode);
+       
         } else if (match(Token.Type.QUOTE)) {
             // String
             CSTNode stringExprNode = parseStringExpr();
             exprNode.addChild(stringExprNode);
+        
         } else if (match(Token.Type.BOOLVAL)) {
             // Boolean literal 
             CSTNode booleanExprNode = parseBooleanExpr();
             exprNode.addChild(booleanExprNode);
+        
         } else if (match(Token.Type.LPAREN)) {
             // boolean expression
             CSTNode booleanExprNode = parseParenBooleanExpr();
             exprNode.addChild(booleanExprNode);
+        
         } else {
            
         }
@@ -306,7 +317,7 @@ public class Parser {
             
             CSTNode charListNode = new CSTNode("CharList");
             
-            // Collect characters until closing quote
+            // Collect chars until closing quote
             while (!match(Token.Type.QUOTE) && !match(Token.Type.EOP)) {
                 if (match(Token.Type.CHAR) || match(Token.Type.SPACE)) {
                     charListNode.addChild(new CSTNode(currentToken.getLexeme(), currentToken));
