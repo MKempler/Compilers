@@ -6,7 +6,14 @@
 3. Run tests: java Compiler ../test/<input_file>
 
 ## My test files:
-
+- test1.txt: Basic program structure test with variable assignment
+- test2.txt: Testing operators, identifiers and numbers
+- test3.txt: Error case - unterminated string
+- test4.txt: Complex program with nested expressions and control structures
+- test5.txt: Multiple small programs testing print, variables and if statements
+- test6.txt: Error detection tests with comments and invalid identifiers
+- test7.txt: Empty block testing
+- test8.txt: Nested blocks with if/while statements
 
 ### All test cases passed
 
