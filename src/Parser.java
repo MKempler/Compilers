@@ -158,7 +158,15 @@ public class Parser {
         
         // print statement node
         CSTNode printNode = new CSTNode("Print Statement");
-
+        
+        if (match(Token.Type.PRINT)) {
+            printNode.addChild(new CSTNode("print", currentToken));
+            nextToken();
+            
+        } else {
+            reportError("Expected 'print' keyword");
+        }
+        
         return printNode;
     }
 } 
