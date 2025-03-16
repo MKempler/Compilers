@@ -1,0 +1,3 @@
+{print("hello")}$
+{int x x = 42 print(x)}$
+{if true {print("true")}}$

@@ -38,6 +38,7 @@ public class Compiler {
         boolean foundEOP = false; // EOP = End of Program aka ($)
         int errorCount = 0;
         int warningCount = 0;
+        int programStartPos = 0;
         
         System.out.println("INFO  Lexer - Lexing program " + (programCount + 1) + "...");
         
@@ -65,8 +66,12 @@ public class Compiler {
                 
                 // If there are no errors begin parsing
                 if (errorCount == 0) {
-                    // Create a new lexer with the same program text
-                    Lexer parserLexer = new Lexer(programText);
+                    // just this program's text
+                    int currentPos = programText.indexOf("$", programStartPos) + 1;
+                    String currentProgramText = programText.substring(programStartPos, currentPos);
+                    
+                    // Create a new lexer with just this program's text
+                    Lexer parserLexer = new Lexer(currentProgramText);
                     
                     // Parse
                     System.out.println("PARSER: Parsing program " + (programCount + 1) + "...");
@@ -89,18 +94,24 @@ public class Compiler {
                 }
                 
                 programCount++; 
+                errorCount = 0;  // Reset the error count for next program
+                warningCount = 0;  // Reset warning count for next program
+                
+                // Update start pos
+                programStartPos = programText.indexOf("$", programStartPos) + 1;
+                
+                // Check reached end of input
                 Token nextToken = lexer.nextToken();
-
                 if (nextToken.getType() != Token.Type.EOF) {  // there are more programs
                     System.out.println("INFO  Lexer - Lexing program " + (programCount + 1) + "...");
                 }
-                currentToken = nextToken; 
+                currentToken = nextToken;
 
             } else if (currentToken.getType() != Token.Type.EOF) {
                 foundEOP = false;
             }
             
-        } while (currentToken.getType() != Token.Type.EOF || currentToken.getLexeme().startsWith("Error"));
+        } while (currentToken.getType() != Token.Type.EOF);
         
         // Check for missing $ at end of program
         if (!foundEOP && currentToken.getType() == Token.Type.EOF) {
