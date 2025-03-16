@@ -206,6 +206,10 @@ public class Parser {
             // Int
             CSTNode intExprNode = parseIntExpr();
             exprNode.addChild(intExprNode);
+        } else if (match(Token.Type.QUOTE)) {
+            // String
+            CSTNode stringExprNode = parseStringExpr();
+            exprNode.addChild(stringExprNode);
         } else {
            
         }
@@ -259,5 +263,47 @@ public class Parser {
         }
         
         return idNode;
+    }
+    
+    // String
+    private CSTNode parseStringExpr() {
+        if (verboseMode) {
+            System.out.println("PARSER: parseStringExpr()");
+        }
+        
+        CSTNode stringExprNode = new CSTNode("String Expression");
+        
+        // opening quote
+        if (match(Token.Type.QUOTE)) {
+            stringExprNode.addChild(new CSTNode("\"", currentToken));
+            nextToken();
+            
+            CSTNode charListNode = new CSTNode("CharList");
+            
+            // Collect characters until closing quote
+            while (!match(Token.Type.QUOTE) && !match(Token.Type.EOP)) {
+                if (match(Token.Type.CHAR) || match(Token.Type.SPACE)) {
+                    charListNode.addChild(new CSTNode(currentToken.getLexeme(), currentToken));
+                    nextToken();
+                } else {
+                    reportError("Expected a character or space in string");
+                    break;
+                }
+            }
+            
+            stringExprNode.addChild(charListNode);
+            
+            // Handle closing quote
+            if (match(Token.Type.QUOTE)) {
+                stringExprNode.addChild(new CSTNode("\"", currentToken));
+                nextToken();
+            } else {
+                reportError("Expected closing quote");
+            }
+        } else {
+            reportError("Expected opening quote");
+        }
+        
+        return stringExprNode;
     }
 } 
