@@ -39,4 +39,27 @@ public class ASTNode {
     public List<ASTNode> getChildren() {
         return children;
     }
+    
+    // displays the AST from this node down
+    public void display() {
+        display(0);
+    }
+    
+    private void display(int level) {
+        StringBuilder indent = new StringBuilder();
+        
+        for (int i = 0; i < level; i++) {
+            indent.append("--");
+        }
+        
+        if (value != null) {
+            System.out.println(indent + "[ " + value + " ]");
+        } else {
+            System.out.println(indent + "< " + type + " >");
+        }
+        
+        for (ASTNode child : children) {
+            child.display(level + 1);
+        }
+    }
 } 
