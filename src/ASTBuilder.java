@@ -69,6 +69,8 @@ public class ASTBuilder {
             
             if (childName.equals("Print Statement")) {
                 convertPrintStatement(statementChild, parentNode);
+            } else if (childName.equals("Variable Declaration")) {
+                convertVarDecl(statementChild, parentNode);
             }
         }
     }
@@ -96,6 +98,53 @@ public class ASTBuilder {
         if (printNode.getChildren().size() >= 3) {
             CSTNode exprNode = printNode.getChildren().get(2);
             convertExpression(exprNode, printASTNode);
+        }
+    }
+
+    private void convertVarDecl(CSTNode varDeclNode, ASTNode parentNode) {
+        if (verboseMode) {
+            System.out.println("AST Builder: Converting Variable Declaration");
+        }
+        
+        
+        int line = 0;
+        int column = 0;
+        
+        if (!varDeclNode.getChildren().isEmpty()) {
+            Token typeToken = varDeclNode.getChildren().get(0).getToken();
+            if (typeToken != null) {
+                line = typeToken.getLine();
+                column = typeToken.getColumn();
+            }
+        }
+        
+        ASTNode varDeclASTNode = new ASTNode("Variable_Declaration", line, column);
+        parentNode.addChild(varDeclASTNode);
+        
+        if (varDeclNode.getChildren().size() >= 2) {
+            
+            CSTNode typeNode = varDeclNode.getChildren().get(0);
+            String type = typeNode.getToken().getLexeme();
+            
+            ASTNode typeASTNode = new ASTNode("Type", type, 
+                                             typeNode.getToken().getLine(), 
+                                             typeNode.getToken().getColumn());
+            varDeclASTNode.addChild(typeASTNode);
+            
+            
+            CSTNode idNode = varDeclNode.getChildren().get(1);
+            if (idNode.getName().equals("Identifier")) {
+                
+                if (!idNode.getChildren().isEmpty()) {
+                    CSTNode idChildNode = idNode.getChildren().get(0);
+                    String id = idChildNode.getToken().getLexeme();
+                    
+                    ASTNode idASTNode = new ASTNode("Identifier", id, 
+                                                idChildNode.getToken().getLine(), 
+                                                   idChildNode.getToken().getColumn());
+                    varDeclASTNode.addChild(idASTNode);
+                }
+            }
         }
     }
 
