@@ -36,6 +36,14 @@ public class ASTNode {
         return value;
     }
     
+    public int getLine() {
+        return line;
+    }
+    
+    public int getColumn() {
+        return column;
+    }
+    
     public List<ASTNode> getChildren() {
         return children;
     }
