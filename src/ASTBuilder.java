@@ -71,6 +71,8 @@ public class ASTBuilder {
                 convertPrintStatement(statementChild, parentNode);
             } else if (childName.equals("Variable Declaration")) {
                 convertVarDecl(statementChild, parentNode);
+            } else if (childName.equals("Assignment Statement")) {
+                convertAssignmentStatement(statementChild, parentNode);
             }
         }
     }
@@ -145,6 +147,46 @@ public class ASTBuilder {
                     varDeclASTNode.addChild(idASTNode);
                 }
             }
+        }
+    }
+
+    private void convertAssignmentStatement(CSTNode assignNode, ASTNode parentNode) {
+        if (verboseMode) {
+            System.out.println("AST Builder: Converting Assignment Statement");
+        }
+        
+        int line = 0;
+        int column = 0;
+        
+        if (!assignNode.getChildren().isEmpty()) {
+            CSTNode firstChild = assignNode.getChildren().get(0);
+            if (firstChild.getToken() != null) {
+                line = firstChild.getToken().getLine();
+                column = firstChild.getToken().getColumn();
+            }
+        }
+        
+        ASTNode assignASTNode = new ASTNode("Assignment_Statement", line, column);
+        parentNode.addChild(assignASTNode);
+        
+        if (assignNode.getChildren().size() >= 3) {
+
+            CSTNode idNode = assignNode.getChildren().get(0);
+            
+            if (idNode.getName().equals("Identifier")) {
+                if (!idNode.getChildren().isEmpty()) {
+                    CSTNode idChildNode = idNode.getChildren().get(0);
+                    String id = idChildNode.getToken().getLexeme();
+                    
+                    ASTNode idASTNode = new ASTNode("Identifier", id, 
+                                                   idChildNode.getToken().getLine(), 
+                                                   idChildNode.getToken().getColumn());
+                    assignASTNode.addChild(idASTNode);
+                }
+            }
+        
+            CSTNode exprNode = assignNode.getChildren().get(2);
+            convertExpression(exprNode, assignASTNode);
         }
     }
 
