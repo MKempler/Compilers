@@ -49,4 +49,27 @@ public class SymbolTable {
         symbols.add(symbol);
         return true;
     }
+    
+    public Symbol lookup(String name) {
+        // Start at current scope and work up
+        for (int scope = currentScope; scope >= 0; scope--) {
+            Symbol symbol = lookupInScope(name, scope);
+            if (symbol != null) {
+                return symbol;
+            }
+        }
+        return null;
+    }
+    
+    private Symbol lookupInScope(String name, int scope) {
+        List<Symbol> symbols = table.get(name);
+        if (symbols != null) {
+            for (Symbol symbol : symbols) {
+                if (symbol.getScope() == scope) {
+                    return symbol;
+                }
+            }
+        }
+        return null;
+    }
 } 
