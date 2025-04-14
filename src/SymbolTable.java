@@ -72,4 +72,31 @@ public class SymbolTable {
         }
         return null;
     }
+    
+    public void display() {
+        System.out.println("\nSymbol Table");
+        System.out.println("------------------------");
+        System.out.println("Name\tType\tScope\tLine");
+        System.out.println("------------------------");
+        
+        // Get all symbols
+        List<Symbol> allSymbols = new ArrayList<>();
+        for (List<Symbol> symbols : table.values()) {
+            allSymbols.addAll(symbols);
+        }
+        
+        // Sort by scope
+        allSymbols.sort((s1, s2) -> {
+            if (s1.getScope() != s2.getScope()) {
+                return Integer.compare(s1.getScope(), s2.getScope());
+            }
+            return s1.getName().compareTo(s2.getName());
+        });
+        
+        // Display the symbols
+        for (Symbol symbol : allSymbols) {
+            System.out.println(symbol);
+        }
+        System.out.println("------------------------");
+    }
 } 
