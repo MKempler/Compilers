@@ -1,6 +1,7 @@
 public class Compiler {
     private Lexer lexer;
     private Parser parser;
+    private ASTBuilder astBuilder;
     private boolean verboseMode = true;  //always true for debugging
     private String programText; 
 
@@ -90,13 +91,24 @@ public class Compiler {
                     if (parser.getErrorCount() == 0) {
                         System.out.println("CST for program " + (programCount + 1) + "...");
                         cstRoot.display();
+                        
+                        // Build AST from the CST
+                        System.out.println("Building AST for program " + (programCount + 1) + "...");
+                        astBuilder = new ASTBuilder(verboseMode);
+                        ASTNode astRoot = astBuilder.buildAST(cstRoot);
+                        
+                        // Display the AST
+                        System.out.println("AST for program " + (programCount + 1) + "...");
+                        astRoot.display();
                     } else {
                         System.out.println("CST for program " + (programCount + 1) + ": Skipped due to PARSER error(s).");
+                        System.out.println("AST for program " + (programCount + 1) + ": Skipped due to PARSER error(s).");
                         totalParserErrors += parser.getErrorCount();
                     }
                 } else {
                     System.out.println("PARSER: Skipped due to LEXER error(s)");
                     System.out.println("CST for program " + (programCount + 1) + ": Skipped due to LEXER error(s).");
+                    System.out.println("AST for program " + (programCount + 1) + ": Skipped due to LEXER error(s).");
                 }
                 
                 programCount++; 
