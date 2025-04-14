@@ -73,6 +73,11 @@ public class ASTBuilder {
                 convertVarDecl(statementChild, parentNode);
             } else if (childName.equals("Assignment Statement")) {
                 convertAssignmentStatement(statementChild, parentNode);
+            } else if (childName.equals("If Statement")) {
+                convertIfStatement(statementChild, parentNode);
+            } else if (childName.equals("Block")) {
+                ASTNode blockNode = convertBlock(statementChild);
+                parentNode.addChild(blockNode);
             }
         }
     }
@@ -187,6 +192,54 @@ public class ASTBuilder {
         
             CSTNode exprNode = assignNode.getChildren().get(2);
             convertExpression(exprNode, assignASTNode);
+        }
+    }
+
+    private void convertIfStatement(CSTNode ifNode, ASTNode parentNode) {
+        if (verboseMode) {
+            System.out.println("AST Builder: Converting If Statement");
+        }
+        
+        int line = 0;
+        int column = 0;
+        
+        if (!ifNode.getChildren().isEmpty()) {
+            Token ifToken = ifNode.getChildren().get(0).getToken();
+            if (ifToken != null) {
+                line = ifToken.getLine();
+                column = ifToken.getColumn();
+            }
+        }
+        
+        ASTNode ifASTNode = new ASTNode("If_Statement", line, column);
+        parentNode.addChild(ifASTNode);
+        
+        if (ifNode.getChildren().size() >= 3) {
+            CSTNode boolExprNode = ifNode.getChildren().get(1);
+            convertBooleanExpression(boolExprNode, ifASTNode);
+            
+            CSTNode blockNode = ifNode.getChildren().get(2);
+            ASTNode blockASTNode = convertBlock(blockNode);
+            ifASTNode.addChild(blockASTNode);
+        }
+    }
+
+    private void convertBooleanExpression(CSTNode boolExprNode, ASTNode parentNode) {
+        if (verboseMode) {
+            System.out.println("AST Builder: Converting Boolean Expression");
+        }
+        
+        ASTNode boolExprASTNode = new ASTNode("Boolean_Expression", 
+                                             boolExprNode.getToken() != null ? boolExprNode.getToken().getLine() : 0,
+                                             boolExprNode.getToken() != null ? boolExprNode.getToken().getColumn() : 0);
+        parentNode.addChild(boolExprASTNode);
+        
+        if (boolExprNode.getToken() != null) {
+            String value = boolExprNode.getToken().getLexeme();
+            ASTNode valueNode = new ASTNode("Value", value, 
+                                            boolExprNode.getToken().getLine(), 
+                                            boolExprNode.getToken().getColumn());
+            boolExprASTNode.addChild(valueNode);
         }
     }
 
