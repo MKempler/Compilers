@@ -61,6 +61,8 @@ public class SemanticAnalyzer {
             analyzeIdentifier(node);
         } else if (nodeType.equals("Assignment_Statement")) {
             analyzeAssignmentStatement(node);
+        } else if (nodeType.equals("Print_Statement")) {
+            analyzePrintStatement(node);
         }
     }
     
@@ -204,6 +206,17 @@ public class SemanticAnalyzer {
         
         // Recursively check all children 
         for (ASTNode child : exprNode.getChildren()) {
+            analyzeExpressionForVariables(child);
+        }
+    }
+    
+    private void analyzePrintStatement(ASTNode printNode) {
+        if (verboseMode) {
+            System.out.println("SEMANTIC: Analyzing print statement");
+        }
+    
+        for (ASTNode child : printNode.getChildren()) {
+            
             analyzeExpressionForVariables(child);
         }
     }
