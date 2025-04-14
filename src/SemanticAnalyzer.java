@@ -26,6 +26,7 @@ public class SemanticAnalyzer {
         } else {
             System.out.println("SEMANTIC: Analysis completed with " + errorCount + " errors and " + warningCount + " warnings");
         }
+        symbolTable.display();
     }
     
     private void analyzeBlock(ASTNode blockNode) {
@@ -56,6 +57,8 @@ public class SemanticAnalyzer {
         
         if (nodeType.equals("Variable_Declaration")) {
             analyzeVariableDeclaration(node);
+        } else if (nodeType.equals("Identifier")) {
+            analyzeIdentifier(node);
         }
     }
     
@@ -85,6 +88,20 @@ public class SemanticAnalyzer {
                 System.out.println("SEMANTIC: Added variable '" + name + "' of type '" + type + 
                                  "' to scope " + symbolTable.getCurrentScope());
             }
+        }
+    }
+    
+    private void analyzeIdentifier(ASTNode idNode) {
+        String name = idNode.getValue();
+        int line = idNode.getLine();
+        int column = idNode.getColumn();
+        
+        Symbol symbol = symbolTable.lookup(name);
+        if (symbol == null) {
+            reportError("Variable '" + name + "' used before declaration", line, column);
+        } else {
+            
+            symbol.setUsed(true);
         }
     }
     
