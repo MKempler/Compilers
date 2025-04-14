@@ -128,11 +128,68 @@ public class SemanticAnalyzer {
                     reportError("Variable '" + name + "' used before declaration", line, column);
                 } else {
                     symbol.setInitialized(true);
+                    
+                    // Type check 
+                    String exprType = getExpressionType(exprNode);
+                    
+                    if (!exprType.equals("unknown") && !symbol.getType().equals(exprType)) {
+                        reportError("Type mismatch: cannot assign " + exprType + 
+                                  " to variable '" + name + "' of type " + symbol.getType(), 
+                                  line, column);
+                    }
                 }
             }
         
             analyzeExpressionForVariables(exprNode);
         }
+    }
+    
+    private String getExpressionType(ASTNode exprNode) {
+        if (verboseMode) {
+            System.out.println("SEMANTIC: Getting type of expression: " + exprNode.getType());
+        }
+        
+        //  get the type from the symbol table
+        if (exprNode.getType().equals("Identifier")) {
+            String name = exprNode.getValue();
+            Symbol symbol = symbolTable.lookup(name);
+            if (symbol != null) {
+                return symbol.getType();
+            }
+            return "unknown";
+        }
+        
+        // determine the type based on the content
+        if (exprNode.getType().equals("Value")) {
+            String value = exprNode.getValue();
+            
+            //  boolean literals
+            if (value.equals("true") || value.equals("false")) {
+                return "boolean";
+            }
+            
+            // Check for string literals
+            if (value.startsWith("\"")) {
+                return "string";
+            }
+            
+            // numeric literals
+            try {
+                Integer.parseInt(value);
+                return "int";
+            } catch (NumberFormatException e) {
+               
+            }
+        }
+       
+        for (ASTNode child : exprNode.getChildren()) {
+            String childType = getExpressionType(child);
+            if (!childType.equals("unknown")) {
+                return childType;
+            }
+        }
+        
+        return "unknown";
     }
     
     private void analyzeExpressionForVariables(ASTNode exprNode) {
