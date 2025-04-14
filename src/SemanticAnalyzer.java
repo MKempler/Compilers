@@ -59,6 +59,8 @@ public class SemanticAnalyzer {
             analyzeVariableDeclaration(node);
         } else if (nodeType.equals("Identifier")) {
             analyzeIdentifier(node);
+        } else if (nodeType.equals("Assignment_Statement")) {
+            analyzeAssignmentStatement(node);
         }
     }
     
@@ -102,6 +104,50 @@ public class SemanticAnalyzer {
         } else {
             
             symbol.setUsed(true);
+        }
+    }
+    
+    private void analyzeAssignmentStatement(ASTNode assignNode) {
+        if (verboseMode) {
+            System.out.println("SEMANTIC: Analyzing assignment statement");
+        }
+        
+        if (assignNode.getChildren().size() >= 2) {
+            ASTNode idNode = assignNode.getChildren().get(0);
+            ASTNode exprNode = assignNode.getChildren().get(1);
+            
+            // checks if the variable is declared
+            if (idNode.getType().equals("Identifier")) {
+                String name = idNode.getValue();
+                int line = idNode.getLine();
+                int column = idNode.getColumn();
+                
+                Symbol symbol = symbolTable.lookup(name);
+                
+                if (symbol == null) {
+                    reportError("Variable '" + name + "' used before declaration", line, column);
+                } else {
+                    symbol.setInitialized(true);
+                }
+            }
+        
+            analyzeExpressionForVariables(exprNode);
+        }
+    }
+    
+    private void analyzeExpressionForVariables(ASTNode exprNode) {
+        if (verboseMode) {
+            System.out.println("SEMANTIC: Analyzing expression for variables: " + exprNode.getType());
+        }
+        
+        // If identifier check if it exists and mark
+        if (exprNode.getType().equals("Identifier")) {
+            analyzeIdentifier(exprNode);
+        }
+        
+        // Recursively check all children 
+        for (ASTNode child : exprNode.getChildren()) {
+            analyzeExpressionForVariables(child);
         }
     }
     
