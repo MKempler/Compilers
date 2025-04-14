@@ -75,6 +75,8 @@ public class ASTBuilder {
                 convertAssignmentStatement(statementChild, parentNode);
             } else if (childName.equals("If Statement")) {
                 convertIfStatement(statementChild, parentNode);
+            } else if (childName.equals("While Statement")) {
+                convertWhileStatement(statementChild, parentNode);
             } else if (childName.equals("Block")) {
                 ASTNode blockNode = convertBlock(statementChild);
                 parentNode.addChild(blockNode);
@@ -221,6 +223,35 @@ public class ASTBuilder {
             CSTNode blockNode = ifNode.getChildren().get(2);
             ASTNode blockASTNode = convertBlock(blockNode);
             ifASTNode.addChild(blockASTNode);
+        }
+    }
+
+    private void convertWhileStatement(CSTNode whileNode, ASTNode parentNode) {
+        if (verboseMode) {
+            System.out.println("AST Builder: Converting While Statement");
+        }
+        
+        int line = 0;
+        int column = 0;
+        
+        if (!whileNode.getChildren().isEmpty()) {
+            Token whileToken = whileNode.getChildren().get(0).getToken();
+            if (whileToken != null) {
+                line = whileToken.getLine();
+                column = whileToken.getColumn();
+            }
+        }
+        
+        ASTNode whileASTNode = new ASTNode("While_Statement", line, column);
+        parentNode.addChild(whileASTNode);
+        
+        if (whileNode.getChildren().size() >= 3) {
+            CSTNode boolExprNode = whileNode.getChildren().get(1);
+            convertBooleanExpression(boolExprNode, whileASTNode);
+            
+            CSTNode blockNode = whileNode.getChildren().get(2);
+            ASTNode blockASTNode = convertBlock(blockNode);
+            whileASTNode.addChild(blockASTNode);
         }
     }
 
