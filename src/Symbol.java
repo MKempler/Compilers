@@ -5,7 +5,7 @@ public class Symbol {
     private int line;   
     private int column;  
     private boolean isInitialized = false; 
-    private boolean isUsed = false;     
+    private boolean isUsed = false;       
 
     public Symbol(String name, String type, int scope, int line, int column) {
         this.name = name;
@@ -19,7 +19,6 @@ public class Symbol {
         return name;
     }
     
-
     public String getType() {
         return type;
     }
@@ -36,12 +35,10 @@ public class Symbol {
         return column;
     }
     
-
     public boolean isInitialized() {
         return isInitialized;
     }
     
-
     public void setInitialized(boolean initialized) {
         isInitialized = initialized;
     }
@@ -53,6 +50,7 @@ public class Symbol {
     public void setUsed(boolean used) {
         isUsed = used;
     }
+
     public String toString() {
         return name + "\t" + type + "\t" + scope + "\t" + line;
     }

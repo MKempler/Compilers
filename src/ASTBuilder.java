@@ -67,17 +67,23 @@ public class ASTBuilder {
                 System.out.println("AST Builder: Statement type is " + childName);
             }
             
+            // Maps statement types to their converters
             if (childName.equals("Print Statement")) {
                 convertPrintStatement(statementChild, parentNode);
-            } else if (childName.equals("Variable Declaration")) {
+            } 
+            else if (childName.equals("Variable Declaration")) {
                 convertVarDecl(statementChild, parentNode);
-            } else if (childName.equals("Assignment Statement")) {
+            } 
+            else if (childName.equals("Assignment Statement")) {
                 convertAssignmentStatement(statementChild, parentNode);
-            } else if (childName.equals("If Statement")) {
+            } 
+            else if (childName.equals("If Statement")) {
                 convertIfStatement(statementChild, parentNode);
-            } else if (childName.equals("While Statement")) {
+            } 
+            else if (childName.equals("While Statement")) {
                 convertWhileStatement(statementChild, parentNode);
-            } else if (childName.equals("Block")) {
+            } 
+            else if (childName.equals("Block")) {
                 ASTNode blockNode = convertBlock(statementChild);
                 parentNode.addChild(blockNode);
             }
@@ -121,6 +127,7 @@ public class ASTBuilder {
         
         if (!varDeclNode.getChildren().isEmpty()) {
             Token typeToken = varDeclNode.getChildren().get(0).getToken();
+            
             if (typeToken != null) {
                 line = typeToken.getLine();
                 column = typeToken.getColumn();
@@ -255,6 +262,7 @@ public class ASTBuilder {
         }
     }
 
+    // Handles boolean literals and comparison expressions
     private void convertBooleanExpression(CSTNode boolExprNode, ASTNode parentNode) {
         if (verboseMode) {
             System.out.println("AST Builder: Converting Boolean Expression");
@@ -284,6 +292,7 @@ public class ASTBuilder {
         }
     }
 
+    // processes identifiers, literals, and complex expressions
     private void convertExpression(CSTNode exprNode, ASTNode parentNode) {
         if (verboseMode) {
             System.out.println("AST Builder: Converting Expression");

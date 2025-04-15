@@ -73,17 +73,23 @@ public class SemanticAnalyzer {
         
         if (nodeType.equals("Variable_Declaration")) {
             analyzeVariableDeclaration(node);
-        } else if (nodeType.equals("Identifier")) {
+        } 
+        else if (nodeType.equals("Identifier")) {
             analyzeIdentifier(node);
-        } else if (nodeType.equals("Assignment_Statement")) {
+        } 
+        else if (nodeType.equals("Assignment_Statement")){
             analyzeAssignmentStatement(node);
-        } else if (nodeType.equals("Print_Statement")) {
+        } 
+        else if (nodeType.equals("Print_Statement")) {
             analyzePrintStatement(node);
-        } else if (nodeType.equals("If_Statement")) {
+        } 
+        else if(nodeType.equals("If_Statement")) {
             analyzeIfStatement(node);
-        } else if (nodeType.equals("While_Statement")) {
+        } 
+        else if (nodeType.equals("While_Statement")) {
             analyzeWhileStatement(node);
-        } else if (nodeType.equals("BLOCK")) {
+        } 
+        else if (nodeType.equals("BLOCK")) {
             analyzeBlock(node);
         }
     }
@@ -171,6 +177,7 @@ public class SemanticAnalyzer {
         }
     }
     
+    // Determines and validates the type of expressions
     private String getExpressionType(ASTNode exprNode) {
         if (verboseMode) {
             System.out.println("SEMANTIC: Getting type of expression: " + exprNode.getType());
@@ -210,17 +217,17 @@ public class SemanticAnalyzer {
         if (exprNode.getType().equals("Value")) {
             String value = exprNode.getValue();
             
-            //  boolean literals
+            // check for booleans
             if (value.equals("true") || value.equals("false")) {
                 return "boolean";
             }
             
-            // Check for string literals
+            // string check
             if (value.startsWith("\"")) {
                 return "string";
             }
             
-            // numeric literals
+            // num literals
             try {
                 Integer.parseInt(value);
                 return "int";
