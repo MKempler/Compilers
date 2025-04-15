@@ -290,11 +290,29 @@ public class ASTBuilder {
                 ASTNode valueNode = new ASTNode("Value", value, line, column);
                 parentNode.addChild(valueNode);
             
+            } else if (exprChild.getName().equals("Identifier")) {
+                //  handling for identifiers
+                if (!exprChild.getChildren().isEmpty()) {
+                    CSTNode idChildNode = exprChild.getChildren().get(0);
+                    String id = idChildNode.getToken().getLexeme();
+                    
+                    ASTNode idASTNode = new ASTNode("Identifier", id, 
+                                                  idChildNode.getToken().getLine(), 
+                                                  idChildNode.getToken().getColumn());
+                    parentNode.addChild(idASTNode);
+                }
             } else {
                 ASTNode valueNode = new ASTNode("Expression", 
                                                exprChild.getToken() != null ? exprChild.getToken().getLine() : 0,
                                                exprChild.getToken() != null ? exprChild.getToken().getColumn() : 0);
                 parentNode.addChild(valueNode);
+                
+                // recursively convert the child expression
+                if (exprChild.getName().equals("Integer Expression") || 
+                    exprChild.getName().equals("String Expression") ||
+                    exprChild.getName().equals("Boolean Expression")) {
+                    convertExpression(exprChild, valueNode);
+                }
             }
         }
     }
