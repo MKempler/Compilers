@@ -63,6 +63,12 @@ public class SemanticAnalyzer {
             analyzeAssignmentStatement(node);
         } else if (nodeType.equals("Print_Statement")) {
             analyzePrintStatement(node);
+        } else if (nodeType.equals("If_Statement")) {
+            analyzeIfStatement(node);
+        } else if (nodeType.equals("While_Statement")) {
+            analyzeWhileStatement(node);
+        } else if (nodeType.equals("BLOCK")) {
+            analyzeBlock(node);
         }
     }
     
@@ -218,6 +224,53 @@ public class SemanticAnalyzer {
         for (ASTNode child : printNode.getChildren()) {
             
             analyzeExpressionForVariables(child);
+        }
+    }
+    
+    private void analyzeIfStatement(ASTNode ifNode) {
+        if (verboseMode) {
+            System.out.println("SEMANTIC: Analyzing if statement");
+        }
+        
+        if (ifNode.getChildren().size() >= 2) {
+
+            ASTNode conditionNode = ifNode.getChildren().get(0);
+        
+            analyzeExpressionForVariables(conditionNode);
+            
+            // Verify it's a boolean expression
+            String conditionType = getExpressionType(conditionNode);
+            if (!conditionType.equals("unknown") && !conditionType.equals("boolean")) {
+                reportError("Condition in if statement must be a boolean expression, found " + 
+                           conditionType, conditionNode.getLine(), conditionNode.getColumn());
+            }
+            
+            for (int i = 1; i < ifNode.getChildren().size(); i++) {
+                analyzeNode(ifNode.getChildren().get(i));
+            }
+        }
+    }
+    
+    private void analyzeWhileStatement(ASTNode whileNode) {
+        if (verboseMode) {
+            System.out.println("SEMANTIC: Analyzing while statement");
+        }
+        
+        if (whileNode.getChildren().size() >= 2) {
+          
+            ASTNode conditionNode = whileNode.getChildren().get(0);
+            
+            analyzeExpressionForVariables(conditionNode);
+            
+            String conditionType = getExpressionType(conditionNode);
+            if (!conditionType.equals("unknown") && !conditionType.equals("boolean")) {
+                reportError("Condition in while statement must be a boolean expression, found " + 
+                           conditionType, conditionNode.getLine(), conditionNode.getColumn());
+            }
+            
+            for (int i = 1; i < whileNode.getChildren().size(); i++) {
+                analyzeNode(whileNode.getChildren().get(i));
+            }
         }
     }
     
