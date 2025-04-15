@@ -43,6 +43,8 @@ public class Compiler {
         int totalLexerErrors = 0;
         int totalLexerWarnings = 0;
         int totalParserErrors = 0;
+        int totalSemanticErrors = 0;
+        int totalSemanticWarnings = 0;
         
         System.out.println("INFO  Lexer - Lexing program " + (programCount + 1) + "...");
         
@@ -100,15 +102,25 @@ public class Compiler {
                         // Display the AST
                         System.out.println("AST for program " + (programCount + 1) + "...");
                         astRoot.display();
+                        
+                        // semantic analysis
+                        System.out.println("Performing semantic analysis for program " + (programCount + 1) + "...");
+                        SemanticAnalyzer semanticAnalyzer = new SemanticAnalyzer(astRoot, verboseMode);
+                        semanticAnalyzer.analyze();
+                        
+                        totalSemanticErrors += semanticAnalyzer.getErrorCount();
+                        totalSemanticWarnings += semanticAnalyzer.getWarningCount();
                     } else {
                         System.out.println("CST for program " + (programCount + 1) + ": Skipped due to PARSER error(s).");
                         System.out.println("AST for program " + (programCount + 1) + ": Skipped due to PARSER error(s).");
+                        System.out.println("Semantic analysis for program " + (programCount + 1) + ": Skipped due to PARSER error(s).");
                         totalParserErrors += parser.getErrorCount();
                     }
                 } else {
                     System.out.println("PARSER: Skipped due to LEXER error(s)");
                     System.out.println("CST for program " + (programCount + 1) + ": Skipped due to LEXER error(s).");
                     System.out.println("AST for program " + (programCount + 1) + ": Skipped due to LEXER error(s).");
+                    System.out.println("Semantic analysis for program " + (programCount + 1) + ": Skipped due to LEXER error(s).");
                 }
                 
                 programCount++; 
@@ -146,8 +158,10 @@ public class Compiler {
         System.out.println("Total Lexer Errors: " + totalLexerErrors);
         System.out.println("Total Lexer Warnings: " + totalLexerWarnings);
         System.out.println("Total Parser Errors: " + totalParserErrors);
-        System.out.println("Total Errors: " + (totalLexerErrors + totalParserErrors));
-        System.out.println("Total Warnings: " + totalLexerWarnings);
+        System.out.println("Total Semantic Errors: " + totalSemanticErrors);
+        System.out.println("Total Semantic Warnings: " + totalSemanticWarnings);
+        System.out.println("Total Errors: " + (totalLexerErrors + totalParserErrors + totalSemanticErrors));
+        System.out.println("Total Warnings: " + (totalLexerWarnings + totalSemanticWarnings));
     }
     
     // Reads the programText and returns it's contents as a string
