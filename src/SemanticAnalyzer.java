@@ -176,6 +176,26 @@ public class SemanticAnalyzer {
             System.out.println("SEMANTIC: Getting type of expression: " + exprNode.getType());
         }
         
+        if (exprNode.getType().equals("Boolean_Expression")) {
+            if (exprNode.getChildren().size() >= 2) {
+                
+                ASTNode leftOperand = exprNode.getChildren().get(0);
+                ASTNode rightOperand = exprNode.getChildren().get(1);
+                
+                String leftType = getExpressionType(leftOperand);
+                String rightType = getExpressionType(rightOperand);
+                
+                // Verify types are compatible
+                if (!leftType.equals("unknown") && !rightType.equals("unknown") && 
+                    !leftType.equals(rightType)) {
+                    reportError("Type mismatch in comparison: cannot compare " + leftType + 
+                               " with " + rightType, exprNode.getLine(), exprNode.getColumn());
+                }
+            }
+        
+            return "boolean";
+        }
+        
         //  get the type from the symbol table
         if (exprNode.getType().equals("Identifier")) {
             String name = exprNode.getValue();

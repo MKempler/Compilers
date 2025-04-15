@@ -265,11 +265,21 @@ public class ASTBuilder {
                                              boolExprNode.getToken() != null ? boolExprNode.getToken().getColumn() : 0);
         parentNode.addChild(boolExprASTNode);
         
-        if (boolExprNode.getToken() != null) {
+      
+        if (boolExprNode.getChildren().size() >= 5) {
+            // Get left expression
+            CSTNode leftExprNode = boolExprNode.getChildren().get(1);
+            convertExpression(leftExprNode, boolExprASTNode);
+            
+            // Get right expression
+            CSTNode rightExprNode = boolExprNode.getChildren().get(3);
+            convertExpression(rightExprNode, boolExprASTNode);
+        } else if (boolExprNode.getToken() != null) {
+            
             String value = boolExprNode.getToken().getLexeme();
             ASTNode valueNode = new ASTNode("Value", value, 
-                                            boolExprNode.getToken().getLine(), 
-                                            boolExprNode.getToken().getColumn());
+                                           boolExprNode.getToken().getLine(), 
+                                           boolExprNode.getToken().getColumn());
             boolExprASTNode.addChild(valueNode);
         }
     }
