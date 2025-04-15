@@ -1,3 +1,5 @@
+import java.util.List;
+
 public class SemanticAnalyzer {
     private ASTNode ast;
     private SymbolTable symbolTable;
@@ -42,8 +44,22 @@ public class SemanticAnalyzer {
             analyzeNode(child);
         }
         
+        checkForUnusedVariables();
       
         symbolTable.exitScope();
+    }
+    
+    private void checkForUnusedVariables() {
+        // get all symbols in the current scope
+        List<Symbol> symbolsInCurrentScope = symbolTable.getSymbolsInCurrentScope();
+        
+        // check each symbol to see if it was used
+        for (Symbol symbol : symbolsInCurrentScope) {
+            if (!symbol.isUsed()) {
+                reportWarning("Variable '" + symbol.getName() + "' is declared but never used", 
+                             symbol.getLine(), symbol.getColumn());
+            }
+        }
     }
     
     private void analyzeNode(ASTNode node) {

@@ -99,4 +99,19 @@ public class SymbolTable {
         }
         System.out.println("------------------------");
     }
+
+    public List<Symbol> getSymbolsInCurrentScope() {
+        List<Symbol> symbolsInScope = new ArrayList<>();
+        
+        // find all symbols in current scope
+        for (List<Symbol> symbols : table.values()) {
+            for (Symbol symbol : symbols) {
+                if (symbol.getScope() == currentScope) {
+                    symbolsInScope.add(symbol);
+                }
+            }
+        }
+        
+        return symbolsInScope;
+    }
 } 
