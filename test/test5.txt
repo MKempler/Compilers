@@ -1,3 +1,18 @@
-{print("hello")}$
-{int x x = 42 print(x)}$
-{if true {print("true")}}$
+   {
+     int i
+     i = 1
+     
+     if (i == 1) {
+       int j
+       j = 2
+       
+       if (j == 2) {
+         print("nested condition")
+       }
+     }
+     
+     while (i == 1) {
+       print("loop")
+       i = 2
+     }
+   }$
