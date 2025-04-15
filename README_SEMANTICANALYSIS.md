@@ -9,6 +9,14 @@
 - test1.txt: Variable declarations, scoping rules, and redeclaration tests
 - test2.txt: Type checking for assignments and boolean comparisons
 - test3.txt: Uninitialized variable detection and usage warnings
+- test4.txt: Complex boolean expressions and conditional testing
+- test5.txt: Nested control flow with if statements and while loops
+- test6.txt: Boolean operations 
+- test7.txt: Variable shadowing in nested scopes
+- test8.txt: String to int type conversion 
+- test9.txt: Unreachable code in while loops
+- test10.txt: Empty blocks and edge case
+- test11.txt: Error recovery after type errors
 
 ### All test cases passed
 
