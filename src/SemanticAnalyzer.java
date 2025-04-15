@@ -110,8 +110,11 @@ public class SemanticAnalyzer {
         if (symbol == null) {
             reportError("Variable '" + name + "' used before declaration", line, column);
         } else {
-            
             symbol.setUsed(true);
+            
+            if (!symbol.isInitialized()) {
+                reportWarning("Variable '" + name + "' might be used before initialization", line, column);
+            }
         }
     }
     
