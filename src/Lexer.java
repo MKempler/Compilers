@@ -281,7 +281,7 @@ public class Lexer {
         
         // check if the next char is a letter
         if (position < programText.length() && Character.isLetter(programText.charAt(position))) {
-            return new Token(Token.Type.EOF,
+            return new Token(Token.Type.ERROR,
                 String.format("Error: Invalid number format at (%d:%d) - letters cannot immediately follow numbers", 
                             line, startColumn),
                 line, startColumn);
