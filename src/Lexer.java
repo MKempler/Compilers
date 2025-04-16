@@ -76,7 +76,7 @@ public class Lexer {
                 }
                 // Handle "illegal" !
                 position++; column++;
-                return new Token(Token.Type.EOF, 
+                return new Token(Token.Type.ERROR, 
                     String.format("Error: Unexpected character '!'", currentChar), 
                     line, column - 1);
 
