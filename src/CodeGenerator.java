@@ -71,27 +71,30 @@ public class CodeGenerator {
                 generateBlockCode(node);
                 break;
             
-                case "Print_Statement":
+            case "Print_Statement":
                 generatePrintCode(node);
                 break;
             
-                case "Variable_Declaration":
+            case "Variable_Declaration":
                 generateVarDeclCode(node);
                 break;
             
-                case "Assignment_Statement":
+            case "Assignment_Statement":
                 generateAssignmentCode(node);
                 break;
             
-                case "If_Statement":
+            case "If_Statement":
                 generateIfCode(node);
                 break;
             
-                case "While_Statement":
+            case "While_Statement":
                 generateWhileCode(node);
                 break;
             
-                default:
+            case "IntLiteral":
+                generateIntLiteralCode(node);
+                break;
+            default:
                 break;
         }
     }
@@ -133,12 +136,19 @@ public class CodeGenerator {
     private void generateAssignmentCode(ASTNode node) {
     }
     
+    private void generateIntLiteralCode(ASTNode node) {
+        // load the literal value into the accumulator
+        int value = Integer.parseInt(node.getValue());
+        append(LDA_CONST, "LDA", "Load value " + value);
+        machineCode.append("   ").append(toHexWithoutPrefix(value)).append("\n");
+    }
+    
     private void generateIfCode(ASTNode node) {
     }
     
     private void generateWhileCode(ASTNode node) {
     }
-   
+    
     private int allocateMemory(String varName) {
         
         if (variableAddresses.containsKey(varName)) {
@@ -169,5 +179,9 @@ public class CodeGenerator {
    
     private String toHexString(int value) {
         return "$" + Integer.toHexString(value).toUpperCase();
+    }
+    
+    private String toHexWithoutPrefix(int value) {
+        return Integer.toHexString(value).toUpperCase();
     }
 } 
