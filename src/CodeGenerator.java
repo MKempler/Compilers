@@ -26,12 +26,15 @@ public class CodeGenerator {
    
     private int currentMemoryAddress;
     
+    private java.util.Map<String, Integer> variableAddresses;
+    
     public CodeGenerator(ASTNode ast, SymbolTable symbolTable, boolean verboseMode) {
         this.ast = ast;
         this.symbolTable = symbolTable;
         this.verboseMode = verboseMode;
         this.machineCode = new StringBuilder();
         this.currentMemoryAddress = MEMORY_START;
+        this.variableAddresses = new java.util.HashMap<>();
     }
     
     public String generate() {
@@ -108,6 +111,23 @@ public class CodeGenerator {
     }
     
     private void generateVarDeclCode(ASTNode node) {
+        // type and identifier
+        if (node.getChildren().size() >= 2) {
+            ASTNode typeNode = node.getChildren().get(0);
+            ASTNode idNode = node.getChildren().get(1);
+            
+            String varType = typeNode.getValue();
+            String varName = idNode.getValue();
+            
+            // Allocate memory for this variable
+            int address = allocateMemory(varName);
+            
+            if (verboseMode) {
+                System.out.println("CODE GENERATOR: Allocated variable '" + varName + "' at address " + toHexString(address));
+            }
+            
+            appendComment("Variable Declaration: " + varType + " " + varName + " at address " + toHexString(address));
+        }
     }
     
     private void generateAssignmentCode(ASTNode node) {
@@ -117,6 +137,20 @@ public class CodeGenerator {
     }
     
     private void generateWhileCode(ASTNode node) {
+    }
+   
+    private int allocateMemory(String varName) {
+        
+        if (variableAddresses.containsKey(varName)) {
+            return variableAddresses.get(varName);
+        }
+        
+        int address = currentMemoryAddress;
+        variableAddresses.put(varName, address);
+        
+        currentMemoryAddress += 1;
+        
+        return address;
     }
    
     private void append(String opcode, String mnemonic, String comment) {
