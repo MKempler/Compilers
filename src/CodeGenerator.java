@@ -139,6 +139,25 @@ public class CodeGenerator {
     }
     
     private void generateAssignmentCode(ASTNode node) {
+        if (node.getChildren().size() >= 2) {
+            ASTNode idNode = node.getChildren().get(0);
+            ASTNode exprNode = node.getChildren().get(1);
+            
+            String varName = idNode.getValue();
+            Integer address = variableAddresses.get(varName);
+            
+            if (address == null) {
+                appendComment("ERROR: Undefined variable: " + varName);
+                return;
+            }
+            
+            appendComment("Assignment to variable " + varName);
+            
+            generateCode(exprNode);
+            
+            append(STA, "STA", "Store accumulator to " + varName + " at " + toHexString(address));
+            machineCode.append("   ").append(toHexWithoutPrefix(address)).append("\n");
+        }
     }
     
     private void generateIntLiteralCode(ASTNode node) {
