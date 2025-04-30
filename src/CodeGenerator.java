@@ -2,11 +2,35 @@ public class CodeGenerator {
     private ASTNode ast;
     private SymbolTable symbolTable;
     private boolean verboseMode;
+    private StringBuilder machineCode;
+    
+    //  Opcodes
+    private static final String LDA_CONST = "A9";   
+    private static final String LDA_MEM = "AD";      
+    private static final String STA = "8D";        
+    private static final String ADC = "6D";         
+    private static final String LDX_CONST = "A2";  
+    private static final String LDX_MEM = "AE";     
+    private static final String LDY_CONST = "A0";   
+    private static final String LDY_MEM = "AC";     
+    private static final String NOP = "EA";          
+    private static final String CPX = "EC";        
+    private static final String BNE = "D0";         
+    private static final String INC = "EE";        
+    private static final String SYS = "FF";       
+    
+    
+    private static final int MEMORY_START = 0x0010;
+    
+   
+    private int currentMemoryAddress;
     
     public CodeGenerator(ASTNode ast, SymbolTable symbolTable, boolean verboseMode) {
         this.ast = ast;
         this.symbolTable = symbolTable;
         this.verboseMode = verboseMode;
+        this.machineCode = new StringBuilder();
+        this.currentMemoryAddress = MEMORY_START;
     }
     
     public String generate() {
@@ -14,6 +38,35 @@ public class CodeGenerator {
             System.out.println("CODE GENERATOR: Starting code generation");
         }
         
-        return "00 ; BRK - Program End\n";
+        // Clear previous code
+        machineCode.setLength(0);
+        
+     
+        appendComment("6502a Machine Code - Generated from source");
+        appendComment("Memory allocation starts at " + toHexString(MEMORY_START));
+        
+        
+        append(BRK, "BRK", "Program End");
+        
+        return machineCode.toString();
+    }
+    
+   
+    private void append(String opcode, String mnemonic, String comment) {
+        machineCode.append(opcode).append(" ; ").append(mnemonic);
+        if (comment != null && !comment.isEmpty()) {
+            machineCode.append(" - ").append(comment);
+        }
+        machineCode.append("\n");
+    }
+    
+
+    private void appendComment(String comment) {
+        machineCode.append("; ").append(comment).append("\n");
+    }
+    
+   
+    private String toHexString(int value) {
+        return "$" + Integer.toHexString(value).toUpperCase();
     }
 } 
