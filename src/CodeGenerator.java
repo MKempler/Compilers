@@ -94,6 +94,11 @@ public class CodeGenerator {
             case "IntLiteral":
                 generateIntLiteralCode(node);
                 break;
+            
+            case "Identifier":
+                generateIdentifierCode(node);
+                break;
+            
             default:
                 break;
         }
@@ -141,6 +146,21 @@ public class CodeGenerator {
         int value = Integer.parseInt(node.getValue());
         append(LDA_CONST, "LDA", "Load value " + value);
         machineCode.append("   ").append(toHexWithoutPrefix(value)).append("\n");
+    }
+    
+    private void generateIdentifierCode(ASTNode node) {
+        // Load the var value into the accumulator
+        String varName = node.getValue();
+        Integer address = variableAddresses.get(varName);
+        
+        if (address == null) {
+            appendComment("ERROR: Undefined variable: " + varName);
+            return;
+        }
+        
+        // Load from vars memory location to accumulator
+        append(LDA_MEM, "LDA", "Load " + varName + " from " + toHexString(address));
+        machineCode.append("   ").append(toHexWithoutPrefix(address)).append("\n");
     }
     
     private void generateIfCode(ASTNode node) {
