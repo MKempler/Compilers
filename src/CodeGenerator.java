@@ -20,6 +20,9 @@ public class CodeGenerator {
     private static final String SYS = "FF";
     private static final String BRK = "00";
     
+    // System call values
+    private static final int SYS_PRINT_INT = 1;  
+    private static final int SYS_PRINT_STRING = 2; 
     
     private static final int MEMORY_START = 0x0010;
     
@@ -116,6 +119,27 @@ public class CodeGenerator {
     }
     
     private void generatePrintCode(ASTNode node) {
+        if (node.getChildren().isEmpty()) {
+            appendComment("ERROR: Print statement with no expression");
+            return;
+        }
+        
+        appendComment("Print Statement");
+        
+        ASTNode exprNode = node.getChildren().get(0);
+        
+        generateCode(exprNode);
+        
+        //accumulator to Y register
+        append(LDY_CONST, "LDY", "Copy accumulator value to Y register for printing");
+        machineCode.append("   00\n"); // Placeholder, will be replaced with actual value transfer logic
+        
+        // Load into X register
+        append(LDX_CONST, "LDX", "Load system call code for print integer");
+        machineCode.append("   0").append(SYS_PRINT_INT).append("\n");
+        
+       
+        append(SYS, "SYS", "System call - Print integer");
     }
     
     private void generateVarDeclCode(ASTNode node) {
