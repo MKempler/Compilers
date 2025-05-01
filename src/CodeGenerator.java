@@ -33,6 +33,10 @@ public class CodeGenerator {
     
     private static final int TEMP_RESULT_ADDRESS = 0x00FF;
     
+    private static final int STRING_MEMORY_START = 0x0100;
+    private int currentStringAddress;
+    private java.util.Map<String, Integer> stringAddresses;
+    
     public CodeGenerator(ASTNode ast, SymbolTable symbolTable, boolean verboseMode) {
         this.ast = ast;
         this.symbolTable = symbolTable;
@@ -40,6 +44,8 @@ public class CodeGenerator {
         this.machineCode = new StringBuilder();
         this.currentMemoryAddress = MEMORY_START;
         this.variableAddresses = new java.util.HashMap<>();
+        this.currentStringAddress = STRING_MEMORY_START;
+        this.stringAddresses = new java.util.HashMap<>();
     }
     
     public String generate() {
@@ -106,6 +112,10 @@ public class CodeGenerator {
                 
             case "Addition":
                 generateAdditionCode(node);
+                break;
+                
+            case "StringLiteral":
+                generateStringLiteralCode(node);
                 break;
             
             default:
@@ -197,6 +207,24 @@ public class CodeGenerator {
         machineCode.append("   ").append(toHexWithoutPrefix(value)).append("\n");
     }
     
+    private void generateStringLiteralCode(ASTNode node) {
+        // Get string value
+        String stringValue = node.getValue();
+        
+        // Check if we've already allocated this string
+        Integer address = stringAddresses.get(stringValue);
+        
+        if (address == null) {
+            
+            address = allocateStringMemory(stringValue);
+            
+            appendComment("String literal: \"" + stringValue + "\" stored at " + toHexString(address));
+        }
+        
+        append(LDA_CONST, "LDA", "Load address of string \"" + stringValue + "\"");
+        machineCode.append("   ").append(toHexWithoutPrefix(address)).append("\n");
+    }
+    
     private void generateIdentifierCode(ASTNode node) {
         // Load the var value into the accumulator
         String varName = node.getValue();
@@ -250,6 +278,19 @@ public class CodeGenerator {
         variableAddresses.put(varName, address);
         
         currentMemoryAddress += 1;
+        
+        return address;
+    }
+    
+    private int allocateStringMemory(String stringValue) {
+        if (stringAddresses.containsKey(stringValue)) {
+            return stringAddresses.get(stringValue);
+        }
+        
+        int address = currentStringAddress;
+        stringAddresses.put(stringValue, address);
+        
+        currentStringAddress += stringValue.length() + 1;
         
         return address;
     }
