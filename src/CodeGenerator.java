@@ -31,6 +31,8 @@ public class CodeGenerator {
     
     private java.util.Map<String, Integer> variableAddresses;
     
+    private static final int TEMP_RESULT_ADDRESS = 0x00FF;
+    
     public CodeGenerator(ASTNode ast, SymbolTable symbolTable, boolean verboseMode) {
         this.ast = ast;
         this.symbolTable = symbolTable;
@@ -100,6 +102,10 @@ public class CodeGenerator {
             
             case "Identifier":
                 generateIdentifierCode(node);
+                break;
+                
+            case "Addition":
+                generateAdditionCode(node);
                 break;
             
             default:
@@ -204,6 +210,28 @@ public class CodeGenerator {
         // Load from vars memory location to accumulator
         append(LDA_MEM, "LDA", "Load " + varName + " from " + toHexString(address));
         machineCode.append("   ").append(toHexWithoutPrefix(address)).append("\n");
+    }
+    
+    private void generateAdditionCode(ASTNode node) {
+        if (node.getChildren().size() < 2) {
+            appendComment("ERROR: Addition requires two operands");
+            return;
+        }
+        
+        appendComment("Addition expression");
+        
+        ASTNode leftOperand = node.getChildren().get(0);
+        generateCode(leftOperand);
+        
+        append(STA, "STA", "Store left operand result to temp memory");
+        machineCode.append("   ").append(toHexWithoutPrefix(TEMP_RESULT_ADDRESS)).append("\n");
+        
+        ASTNode rightOperand = node.getChildren().get(1);
+        generateCode(rightOperand);
+
+        append(ADC, "ADC", "Add left operand to accumulator");
+        machineCode.append("   ").append(toHexWithoutPrefix(TEMP_RESULT_ADDRESS)).append("\n");
+        
     }
     
     private void generateIfCode(ASTNode node) {
