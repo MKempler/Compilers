@@ -28,15 +28,16 @@ public class CodeGenerator {
     
    
     private int currentMemoryAddress;
-    
+
     private java.util.Map<String, Integer> variableAddresses;
+    private int labelCounter = 0;
     
     private static final int TEMP_RESULT_ADDRESS = 0x00FF;
     
     private static final int STRING_MEMORY_START = 0x0100;
     private int currentStringAddress;
     private java.util.Map<String, Integer> stringAddresses;
-    
+        
     public CodeGenerator(ASTNode ast, SymbolTable symbolTable, boolean verboseMode) {
         this.ast = ast;
         this.symbolTable = symbolTable;
@@ -116,6 +117,10 @@ public class CodeGenerator {
                 
             case "StringLiteral":
                 generateStringLiteralCode(node);
+                break;
+                
+            case "Equals":
+                generateEqualsCode(node);
                 break;
             
             default:
@@ -256,10 +261,50 @@ public class CodeGenerator {
         
         ASTNode rightOperand = node.getChildren().get(1);
         generateCode(rightOperand);
-
+        
         append(ADC, "ADC", "Add left operand to accumulator");
         machineCode.append("   ").append(toHexWithoutPrefix(TEMP_RESULT_ADDRESS)).append("\n");
+    }
+    
+    private void generateEqualsCode(ASTNode node) {
+        if (node.getChildren().size() < 2) {
+            appendComment("ERROR: Equality comparison requires two operands");
+            return;
+        }
         
+        appendComment("Equality comparison (==)");
+        
+        ASTNode leftOperand = node.getChildren().get(0);
+        generateCode(leftOperand);
+        
+        append(LDX_CONST, "LDX", "Transfer accumulator to X register");
+        machineCode.append("   00\n"); // Placeholder for transfer logic
+        
+        ASTNode rightOperand = node.getChildren().get(1);
+        generateCode(rightOperand);
+        
+        String trueLabel = generateLabel("equal_true");
+        String doneLabel = generateLabel("equal_done");
+        
+        append(STA, "STA", "Store right operand to temporary memory");
+        machineCode.append("   ").append(toHexWithoutPrefix(TEMP_RESULT_ADDRESS)).append("\n");
+        
+        append(CPX, "CPX", "Compare X register with memory");
+        machineCode.append("   ").append(toHexWithoutPrefix(TEMP_RESULT_ADDRESS)).append("\n");
+        
+        appendComment("Branch if equal (Z flag = 1)");
+        
+        append(LDA_CONST, "LDA", "Load 0 (false) into accumulator");
+        machineCode.append("   00\n");
+        
+        append(BNE, "BNE", "Branch if not equal to " + doneLabel);
+        machineCode.append("   ").append("XX\n"); // Placeholder for branch offset
+        
+        appendComment(trueLabel + ":");
+        append(LDA_CONST, "LDA", "Load 1 (true) into accumulator");
+        machineCode.append("   01\n");
+        
+        appendComment(doneLabel + ":");
     }
     
     private void generateIfCode(ASTNode node) {
@@ -293,6 +338,10 @@ public class CodeGenerator {
         currentStringAddress += stringValue.length() + 1;
         
         return address;
+    }
+    
+    private String generateLabel(String prefix) {
+        return prefix + "_" + (labelCounter++);
     }
    
     private void append(String opcode, String mnemonic, String comment) {
