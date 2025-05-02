@@ -122,6 +122,10 @@ public class CodeGenerator {
             case "Equals":
                 generateEqualsCode(node);
                 break;
+                
+            case "NotEquals":
+                generateNotEqualsCode(node);
+                break;
             
             default:
                 break;
@@ -303,6 +307,47 @@ public class CodeGenerator {
         appendComment(trueLabel + ":");
         append(LDA_CONST, "LDA", "Load 1 (true) into accumulator");
         machineCode.append("   01\n");
+        
+        appendComment(doneLabel + ":");
+    }
+    
+    private void generateNotEqualsCode(ASTNode node) {
+        if (node.getChildren().size() < 2) {
+            appendComment("ERROR: Not equals comparison requires two operands");
+            return;
+        }
+        
+        appendComment("Not equals comparison (!=)");
+        
+        ASTNode leftOperand = node.getChildren().get(0);
+        generateCode(leftOperand);
+        
+        append(LDX_CONST, "LDX", "Transfer accumulator to X register");
+        machineCode.append("   00\n");
+        
+        ASTNode rightOperand = node.getChildren().get(1);
+        generateCode(rightOperand);
+        
+        String trueLabel = generateLabel("not equal true");
+        String doneLabel = generateLabel("not equal done");
+        
+        append(STA, "STA", "Store right operand to temporary memory");
+        machineCode.append("   ").append(toHexWithoutPrefix(TEMP_RESULT_ADDRESS)).append("\n");
+        
+        append(CPX, "CPX", "Compare X register with memory");
+        machineCode.append("   ").append(toHexWithoutPrefix(TEMP_RESULT_ADDRESS)).append("\n");
+        
+        appendComment("Branch if not equal (Z flag = 0)");
+        
+        append(LDA_CONST, "LDA", "Load 1 (true) into accumulator");
+        machineCode.append("   01\n");
+        
+        append(BNE, "BNE", "Branch if not equal to " + doneLabel);
+        machineCode.append("   ").append("XX\n"); 
+        
+        appendComment(trueLabel + ":");
+        append(LDA_CONST, "LDA", "Load 0 (false) into accumulator");
+        machineCode.append("   00\n");
         
         appendComment(doneLabel + ":");
     }
