@@ -353,6 +353,37 @@ public class CodeGenerator {
     }
     
     private void generateIfCode(ASTNode node) {
+        if (node.getChildren().size() < 2) {
+            appendComment("ERROR: If statement requires condition and block");
+            return;
+        }
+        
+        appendComment("If Statement");
+        
+        ASTNode conditionNode = node.getChildren().get(0);
+        generateCode(conditionNode);
+        
+        String endIfLabel = generateLabel("end if");
+        
+        // Compare accumulator with 0
+        append(LDX_CONST, "LDX", "Load 0 for comparison");
+        machineCode.append("   00\n");
+        
+        append(STA, "STA", "Store condition result");
+        machineCode.append("   ").append(toHexWithoutPrefix(TEMP_RESULT_ADDRESS)).append("\n");
+        
+        append(CPX, "CPX", "Compare condition with 0)");
+        machineCode.append("   ").append(toHexWithoutPrefix(TEMP_RESULT_ADDRESS)).append("\n");
+        
+        // If equal branch past the if block
+        append(BNE, "BNE", "Execute if block if condition is true");
+        machineCode.append("   02\n");
+        
+        // Generate the if block code
+        ASTNode blockNode = node.getChildren().get(1);
+        generateCode(blockNode);
+        
+        appendComment("End of if statement");
     }
     
     private void generateWhileCode(ASTNode node) {
