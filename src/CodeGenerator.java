@@ -387,6 +387,45 @@ public class CodeGenerator {
     }
     
     private void generateWhileCode(ASTNode node) {
+        if (node.getChildren().size() < 2) {
+            appendComment("ERROR: While statement requires condition and block");
+            return;
+        }
+        
+        appendComment("While Loop");
+        
+        String whileStartLabel = generateLabel("whilestart");
+        String whileEndLabel = generateLabel("whileend");
+        
+        
+        appendComment(whileStartLabel + ":");
+        
+        // Generate the condition code 
+        ASTNode conditionNode = node.getChildren().get(0);
+        generateCode(conditionNode);
+        
+        
+        append(LDX_CONST, "LDX", "Load 0 for comparison");
+        machineCode.append("   00\n");
+        
+        append(STA, "STA", "Store condition result");
+        machineCode.append("   ").append(toHexWithoutPrefix(TEMP_RESULT_ADDRESS)).append("\n");
+        
+        append(CPX, "CPX", "Compare condition with 0");
+        machineCode.append("   ").append(toHexWithoutPrefix(TEMP_RESULT_ADDRESS)).append("\n");
+        
+        // If condition is false exit loop
+        append(BNE, "BNE", "Execute loop body if condition is true");
+        machineCode.append("   02\n");
+        
+        ASTNode blockNode = node.getChildren().get(1);
+        generateCode(blockNode);
+        
+        append(LDA_CONST, "LDA", "Jump back to start of while loop");
+        machineCode.append("   ").append(whileStartLabel.hashCode() & 0xFF).append("\n");
+        
+        appendComment(whileEndLabel + ":");
+        appendComment("End of while loop");
     }
     
     private int allocateMemory(String varName) {
