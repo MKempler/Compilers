@@ -40,14 +40,14 @@ public class CodeGenerator {
     // Label resolution
     private StringBuilder codeBuffer;
     private java.util.Map<String, Integer> labelPositions;
-    private java.util.List<BranchFixup> branchFixups;
+    private java.util.List<BranchFix> branchFix;
     
     // track branch instruction
-    private static class BranchFixup {
+    private static class BranchFix {
         final String targetLabel;
         final int instructionPosition;
         
-        BranchFixup(String targetLabel, int instructionPosition) {
+        BranchFix(String targetLabel, int instructionPosition) {
             this.targetLabel = targetLabel;
             this.instructionPosition = instructionPosition;
         }
@@ -64,7 +64,7 @@ public class CodeGenerator {
         this.currentStringAddress = STRING_MEMORY_START;
         this.stringAddresses = new java.util.HashMap<>();
         this.labelPositions = new java.util.HashMap<>();
-        this.branchFixups = new java.util.ArrayList<>();
+        this.branchFix = new java.util.ArrayList<>();
     }
     
     public String generate() {
@@ -575,5 +575,17 @@ public class CodeGenerator {
         if (verboseMode) {
             System.out.println("CODE GENERATOR: Defined label '" + label + "' at position " + position);
         }
+    }
+    private void addBranchFix(String targetLabel, int position) {
+        branchFix.add(new BranchFix(targetLabel, position));
+        
+        if (verboseMode) {
+            System.out.println("CODE GENERATOR: Added branch fix for label '" + targetLabel + 
+                              "' at position " + position);
+        }
+    }
+    
+    private void insertPlaceholder() {
+        machineCode.append("   XX\n");
     }
 } 
