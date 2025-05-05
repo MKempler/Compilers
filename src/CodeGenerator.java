@@ -26,7 +26,6 @@ public class CodeGenerator {
     
     private static final int MEMORY_START = 0x0080;
     
-   
     private int currentMemoryAddress;
 
     private java.util.Map<String, Integer> variableAddresses;
@@ -37,7 +36,23 @@ public class CodeGenerator {
     private static final int STRING_MEMORY_START = 0x0100;
     private int currentStringAddress;
     private java.util.Map<String, Integer> stringAddresses;
+    
+    // Label resolution
+    private StringBuilder codeBuffer;
+    private java.util.Map<String, Integer> labelPositions;
+    private java.util.List<BranchFixup> branchFixups;
+    
+    // track branch instruction
+    private static class BranchFixup {
+        final String targetLabel;
+        final int instructionPosition;
         
+        BranchFixup(String targetLabel, int instructionPosition) {
+            this.targetLabel = targetLabel;
+            this.instructionPosition = instructionPosition;
+        }
+    }
+    
     public CodeGenerator(ASTNode ast, SymbolTable symbolTable, boolean verboseMode) {
         this.ast = ast;
         this.symbolTable = symbolTable;
