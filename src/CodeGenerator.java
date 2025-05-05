@@ -58,10 +58,13 @@ public class CodeGenerator {
         this.symbolTable = symbolTable;
         this.verboseMode = verboseMode;
         this.machineCode = new StringBuilder();
+        this.codeBuffer = new StringBuilder();
         this.currentMemoryAddress = MEMORY_START;
         this.variableAddresses = new java.util.HashMap<>();
         this.currentStringAddress = STRING_MEMORY_START;
         this.stringAddresses = new java.util.HashMap<>();
+        this.labelPositions = new java.util.HashMap<>();
+        this.branchFixups = new java.util.ArrayList<>();
     }
     
     public String generate() {
@@ -550,5 +553,27 @@ public class CodeGenerator {
     // creats a two byte little endian address
     private void emitAddress(int addr) {
         machineCode.append(String.format("   %02X %02X\n", addr & 0xFF, (addr >> 8) & 0xFF));
+    }
+
+    private int getCurrentPosition() {
+        // count the lines in the machineCode that contain actual code 
+        String[] lines = machineCode.toString().split("\n");
+        int codeLines = 0;
+        for (String line : lines) {
+            if (!line.trim().startsWith(";") && !line.trim().isEmpty()) {
+                codeLines++;
+            }
+        }
+        return codeLines;
+    }
+    
+    private void defineLabel(String label) {
+        int position = getCurrentPosition();
+        labelPositions.put(label, position);
+        appendComment("LABEL: " + label);
+        
+        if (verboseMode) {
+            System.out.println("CODE GENERATOR: Defined label '" + label + "' at position " + position);
+        }
     }
 } 
