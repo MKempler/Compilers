@@ -395,6 +395,8 @@ public class CodeGenerator {
         ASTNode conditionNode = node.getChildren().get(0);
         generateCode(conditionNode);
         
+        String skipBlockLabel = generateLabel("if_skip_block");
+        
         append(STA, "STA", "Store condition result");
         emitAddress(TEMP_RESULT_ADDRESS);
         
@@ -404,14 +406,21 @@ public class CodeGenerator {
         append(CPX, "CPX", "Compare condition with 1");
         emitAddress(TEMP_RESULT_ADDRESS);
         
+        // position for branch fix
+        int branchPos = getCurrentPosition();
         append(BNE, "BNE", "Skip next instruction if condition is 0");
-        machineCode.append("   02\n");  
+        insertPlaceholder();
+        
+        // Record branch 
+        addBranchFix(skipBlockLabel, branchPos);
         
         append(NOP, "NOP", "Placeholder skipped when condition is false");
         
         // Generate the if block code
         ASTNode blockNode = node.getChildren().get(1);
         generateCode(blockNode);
+        
+        defineLabel(skipBlockLabel);
         
         appendComment("End of if statement");
     }
