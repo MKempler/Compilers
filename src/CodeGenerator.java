@@ -24,7 +24,7 @@ public class CodeGenerator {
     private static final int SYS_PRINT_INT = 1;  
     private static final int SYS_PRINT_STRING = 2; 
     
-    private static final int MEMORY_START = 0x0010;
+    private static final int MEMORY_START = 0x0080;
     
    
     private int currentMemoryAddress;
@@ -106,6 +106,14 @@ public class CodeGenerator {
             case "IntLiteral":
                 generateIntLiteralCode(node);
                 break;
+                
+            case "Value":
+                if (node.getValue() != null && node.getValue().matches("\\d+")) {
+                    generateIntLiteralCode(node); 
+                } else {
+                    generateBooleanExpressionCode(node);
+                }
+                break;
             
             case "Identifier":
                 generateIdentifierCode(node);
@@ -128,6 +136,7 @@ public class CodeGenerator {
                 break;
             
             default:
+                generateBooleanExpressionCode(node);
                 break;
         }
     }
@@ -155,15 +164,16 @@ public class CodeGenerator {
         
         generateCode(exprNode);
         
-        //accumulator to Y register
-        append(LDY_CONST, "LDY", "Copy accumulator value to Y register for printing");
-        machineCode.append("   00\n"); // Placeholder, will be replaced with actual value transfer logic
+        append(STA, "STA", "Store accumulator value in temporary memory");
+        emitAddress(TEMP_RESULT_ADDRESS);
+
+        append(LDY_MEM, "LDY", "Load Y register from temporary memory");
+        emitAddress(TEMP_RESULT_ADDRESS);
         
         // Load into X register
         append(LDX_CONST, "LDX", "Load system call code for print integer");
-        machineCode.append("   0").append(SYS_PRINT_INT).append("\n");
+        machineCode.append(String.format("   %02X\n", SYS_PRINT_INT & 0xFF));
         
-       
         append(SYS, "SYS", "System call - Print integer");
     }
     
@@ -205,7 +215,7 @@ public class CodeGenerator {
             generateCode(exprNode);
             
             append(STA, "STA", "Store accumulator to " + varName + " at " + toHexString(address));
-            machineCode.append("   ").append(toHexWithoutPrefix(address)).append("\n");
+            emitAddress(address);
         }
     }
     
@@ -213,7 +223,7 @@ public class CodeGenerator {
         // load the literal value into the accumulator
         int value = Integer.parseInt(node.getValue());
         append(LDA_CONST, "LDA", "Load value " + value);
-        machineCode.append("   ").append(toHexWithoutPrefix(value)).append("\n");
+        machineCode.append(String.format("   %02X\n", value & 0xFF));
     }
     
     private void generateStringLiteralCode(ASTNode node) {
@@ -224,14 +234,12 @@ public class CodeGenerator {
         Integer address = stringAddresses.get(stringValue);
         
         if (address == null) {
-            
             address = allocateStringMemory(stringValue);
-            
             appendComment("String literal: \"" + stringValue + "\" stored at " + toHexString(address));
         }
         
         append(LDA_CONST, "LDA", "Load address of string \"" + stringValue + "\"");
-        machineCode.append("   ").append(toHexWithoutPrefix(address)).append("\n");
+        emitAddress(address);
     }
     
     private void generateIdentifierCode(ASTNode node) {
@@ -246,7 +254,7 @@ public class CodeGenerator {
         
         // Load from vars memory location to accumulator
         append(LDA_MEM, "LDA", "Load " + varName + " from " + toHexString(address));
-        machineCode.append("   ").append(toHexWithoutPrefix(address)).append("\n");
+        emitAddress(address);
     }
     
     private void generateAdditionCode(ASTNode node) {
@@ -261,13 +269,13 @@ public class CodeGenerator {
         generateCode(leftOperand);
         
         append(STA, "STA", "Store left operand result to temp memory");
-        machineCode.append("   ").append(toHexWithoutPrefix(TEMP_RESULT_ADDRESS)).append("\n");
+        emitAddress(TEMP_RESULT_ADDRESS);
         
         ASTNode rightOperand = node.getChildren().get(1);
         generateCode(rightOperand);
         
         append(ADC, "ADC", "Add left operand to accumulator");
-        machineCode.append("   ").append(toHexWithoutPrefix(TEMP_RESULT_ADDRESS)).append("\n");
+        emitAddress(TEMP_RESULT_ADDRESS);
     }
     
     private void generateEqualsCode(ASTNode node) {
@@ -363,21 +371,19 @@ public class CodeGenerator {
         ASTNode conditionNode = node.getChildren().get(0);
         generateCode(conditionNode);
         
-        String endIfLabel = generateLabel("end if");
-        
-        // Compare accumulator with 0
-        append(LDX_CONST, "LDX", "Load 0 for comparison");
-        machineCode.append("   00\n");
-        
         append(STA, "STA", "Store condition result");
-        machineCode.append("   ").append(toHexWithoutPrefix(TEMP_RESULT_ADDRESS)).append("\n");
+        emitAddress(TEMP_RESULT_ADDRESS);
         
-        append(CPX, "CPX", "Compare condition with 0)");
-        machineCode.append("   ").append(toHexWithoutPrefix(TEMP_RESULT_ADDRESS)).append("\n");
+        append(LDX_CONST, "LDX", "Load 1 for comparison");
+        machineCode.append("   01\n");
         
-        // If equal branch past the if block
-        append(BNE, "BNE", "Execute if block if condition is true");
-        machineCode.append("   02\n");
+        append(CPX, "CPX", "Compare condition with 1");
+        emitAddress(TEMP_RESULT_ADDRESS);
+        
+        append(BNE, "BNE", "Skip next instruction if condition is 0");
+        machineCode.append("   02\n");  
+        
+        append(NOP, "NOP", "Placeholder skipped when condition is false");
         
         // Generate the if block code
         ASTNode blockNode = node.getChildren().get(1);
@@ -479,5 +485,55 @@ public class CodeGenerator {
     
     private String toHexWithoutPrefix(int value) {
         return Integer.toHexString(value).toUpperCase();
+    }
+    
+    private void generateBooleanExpressionCode(ASTNode node) {
+        if (node.getChildren().size() < 2) {
+            
+            // Simple boolean value or identifier
+            if (node.getValue() != null) {
+                String boolValue = node.getValue();
+                
+                // true or false
+                if (boolValue.equals("true")) {
+                    append(LDA_CONST, "LDA", "Load 1 (true)");
+                    machineCode.append(String.format("   %02X\n", 1));
+                } else {
+                    append(LDA_CONST, "LDA", "Load 0 (false)");
+                    machineCode.append(String.format("   %02X\n", 0));
+                }
+                return;
+            }
+            // if no children or value it's a simple expression
+            if (node.getChildren().size() > 0) {
+                generateCode(node.getChildren().get(0));
+            }
+            return;
+        }
+        
+        // Get the left and right sides of the comparison
+        ASTNode leftNode = node.getChildren().get(0);
+        ASTNode rightNode = node.getChildren().get(1);
+        
+        generateCode(leftNode);
+        
+        append(STA, "STA", "Store left operand");
+        emitAddress(TEMP_RESULT_ADDRESS);
+        
+        append(LDX_MEM, "LDX", "Load X with left operand");
+        emitAddress(TEMP_RESULT_ADDRESS);
+        
+        generateCode(rightNode);
+        
+        append(CPX, "CPX", "Compare left operand with right operand");
+        emitAddress(TEMP_RESULT_ADDRESS);
+        
+        append(LDA_CONST, "LDA", "Load 1 (true)");
+        machineCode.append(String.format("   %02X\n", 1));
+    }
+    
+    // creats a two byte little endian address
+    private void emitAddress(int addr) {
+        machineCode.append(String.format("   %02X %02X\n", addr & 0xFF, (addr >> 8) & 0xFF));
     }
 } 
