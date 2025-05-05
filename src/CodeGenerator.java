@@ -74,14 +74,20 @@ public class CodeGenerator {
         
         // Clear previous code
         machineCode.setLength(0);
+        codeBuffer.setLength(0);
+        labelPositions.clear();
+        branchFix.clear();
         
-        
+        // First pass
         appendComment("6502a Machine Code - Generated from source");
         appendComment("Memory allocation starts at " + toHexString(MEMORY_START));
         
         generateCode(ast);
         
         append(BRK, "BRK", "Program End");
+        
+        // Second pass - resolve branch offsets
+        resolveBranchOffsets();
         
         return machineCode.toString();
     }
@@ -587,5 +593,51 @@ public class CodeGenerator {
     
     private void insertPlaceholder() {
         machineCode.append("   XX\n");
+    }
+ 
+    private void resolveBranchOffsets() {
+       
+        String[] lines = machineCode.toString().split("\n");
+        
+        for (BranchFix fixup : branchFix) {
+            String targetLabel = fixup.targetLabel;
+            int branchPosition = fixup.instructionPosition;
+            
+            Integer targetPosition = labelPositions.get(targetLabel);
+            if (targetPosition == null) {
+                if (verboseMode) {
+                    System.out.println("ERROR: Could not find target label: " + targetLabel);
+                }
+                continue;
+            }
+            
+            int branchOffset = targetPosition - (branchPosition + 2); 
+            
+            if (verboseMode) {
+                System.out.println("CODE GENERATOR: Branch from position " + branchPosition + 
+                                  " to label " + targetLabel + " at position " + targetPosition + 
+                                  " (offset = " + branchOffset + ")");
+            }
+            
+            if (branchOffset < -128 || branchOffset > 127) {
+                appendComment("ERROR: Branch offset too large: " + branchOffset);
+                if (verboseMode) {
+                    System.out.println("ERROR: Branch offset too large: " + branchOffset);
+                }
+                continue;
+            }
+            
+            int offsetByte = branchOffset < 0 ? 256 + branchOffset : branchOffset;
+            
+            String fixedLine = String.format("   %02X", offsetByte & 0xFF);
+            if (branchPosition + 1 < lines.length) {
+                lines[branchPosition + 1] = fixedLine;
+            }
+        }
+        
+        machineCode.setLength(0);
+        for (String line : lines) {
+            machineCode.append(line).append("\n");
+        }
     }
 } 
