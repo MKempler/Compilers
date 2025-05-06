@@ -436,34 +436,46 @@ public class CodeGenerator {
         String whileStartLabel = generateLabel("whilestart");
         String whileEndLabel = generateLabel("whileend");
         
-        
-        appendComment(whileStartLabel + ":");
+        defineLabel(whileStartLabel);
         
         // Generate the condition code 
         ASTNode conditionNode = node.getChildren().get(0);
         generateCode(conditionNode);
         
+        append(STA, "STA", "Store condition result");
+        emitAddress(TEMP_RESULT_ADDRESS);
         
         append(LDX_CONST, "LDX", "Load 0 for comparison");
         machineCode.append("   00\n");
         
-        append(STA, "STA", "Store condition result");
-        machineCode.append("   ").append(toHexWithoutPrefix(TEMP_RESULT_ADDRESS)).append("\n");
-        
         append(CPX, "CPX", "Compare condition with 0");
-        machineCode.append("   ").append(toHexWithoutPrefix(TEMP_RESULT_ADDRESS)).append("\n");
+        emitAddress(TEMP_RESULT_ADDRESS);
         
-        // If condition is false exit loop
+        // position for branch fix
+        int branchPos = getCurrentPosition();
         append(BNE, "BNE", "Execute loop body if condition is true");
-        machineCode.append("   02\n");
+        insertPlaceholder();
+        
+        // branch to end of loop when condition is false
+        addBranchFix(whileEndLabel, branchPos);
         
         ASTNode blockNode = node.getChildren().get(1);
         generateCode(blockNode);
         
-        append(LDA_CONST, "LDA", "Jump back to start of while loop");
-        machineCode.append("   ").append(whileStartLabel.hashCode() & 0xFF).append("\n");
+       
+        int jumpBranchPos = getCurrentPosition();
+        append(BNE, "BNE", "Jump back to start of while loop");
+        insertPlaceholder();
         
-        appendComment(whileEndLabel + ":");
+        // Always load 1 to ensure branch happens
+        append(LDA_CONST, "LDA", "Load 1 to make sure we always loop back");
+        machineCode.append("   01\n");
+        
+        // Add branch fix for the backward jump
+        addBranchFix(whileStartLabel, jumpBranchPos);
+        
+        defineLabel(whileEndLabel);
+        
         appendComment("End of while loop");
     }
     
