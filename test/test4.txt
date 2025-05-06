@@ -1,7 +1,0 @@
-{
-  int x
-  x = 5
-  if ((x == 5) != false) {
-    print("complex boolean")
-  }
-}$

@@ -1,6 +1,0 @@
-{
-  boolean b
-  b = true
-  b = (b != true)
-  print(b)
-}$

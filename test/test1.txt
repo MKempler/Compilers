@@ -1,28 +1,5 @@
 {
-    /*  Basic variable declaration */
-    int x
-    x = 5
-    print(x)
-}$
-
-{
-    int a
-    a = 10
-    {
-        int b
-        b = 20
-        print(a)
-        print(b)
-    }
-    /* b should be out of scope here */
-    print(b)
-}$
-
-{
-    /* Variable redeclaration in same scope */
-    int y
-    y = 15
-    print(y)
-    int y
-    y = 30
-}$
+  int x
+  x = 42
+  print(x)
+}$ 

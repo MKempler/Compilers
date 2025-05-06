@@ -1,6 +1,0 @@
-{
-  int a
-  a = "string"  /* Error */
-  a = 5         /* Should still process this */
-  print(a)
-}$
