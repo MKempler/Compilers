@@ -120,6 +120,9 @@ public class Compiler {
                             // Extract only the hex opcodes
                             StringBuilder rawOpcodes = new StringBuilder();
                             for (String line : machineCode.split("\n")) {
+                                if (line.trim().equals("; String Data Section (Zero Page)")) {
+                                    break; 
+                                }
                                 if (line.trim().startsWith(";") || line.trim().isEmpty()) continue;
 
                                 // operand line
@@ -152,6 +155,41 @@ public class Compiler {
                                 if (i * 2 + 2 <= opcodes.length()) {
                                     String byteStr = opcodes.substring(i * 2, i * 2 + 2);
                                     memoryImage[i] = (byte) Integer.parseInt(byteStr, 16);
+                                }
+                            }
+                            
+                            // Parse string data section and place it at (0x0090)
+                            int dataAddr = 0x90; 
+                            boolean inData = false;
+                            for (String line : machineCode.split("\n")) {
+                                if (line.trim().equals("; String Data Section (Zero Page)")) {
+                                    inData = true;
+                                    continue;
+                                }
+                                if (!inData) continue;
+                                
+                                if (line.trim().startsWith(";")) continue;
+                                
+                                // Extract hex value 
+                                String hexPart = line.trim();
+                                if (hexPart.contains(";")) {
+                                    hexPart = hexPart.split(";")[0].trim();
+                                }
+                                
+                                // Remove spaces and process
+                                hexPart = hexPart.replace(" ", "");
+                                if (hexPart.matches("[0-9A-F]+")) {
+                                    // even number of chars
+                                    if (hexPart.length() % 2 == 0) {
+                                        // Convert to byte and add 
+                                        memoryImage[dataAddr++] = (byte) Integer.parseInt(hexPart, 16);
+                                        
+                                        //check for memory overflow
+                                        if (dataAddr >= 256) {
+                                            System.out.println("WARNING: String data exceeded available memory");
+                                            break;
+                                        }
+                                    }
                                 }
                             }
                             

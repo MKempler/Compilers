@@ -1,0 +1,16 @@
+{
+  int a
+  int b 
+  int c
+  a = 5
+  b = 10
+  c = 0
+  
+  print(a)
+  c = a
+  print(c)
+  
+  a = 15
+  b = a
+  print(b)
+}$

@@ -301,6 +301,11 @@ public class ASTBuilder {
         if (!exprNode.getChildren().isEmpty()) {
             CSTNode exprChild = exprNode.getChildren().get(0);
             
+            if (exprChild.getName().equals("String Expression")) {
+                convertStringExpression(exprChild, parentNode);
+                return;
+            }
+            
             if (exprChild.isTerminal()) {
                 String value = exprChild.getToken().getLexeme();
                 int line = exprChild.getToken().getLine();
@@ -334,5 +339,24 @@ public class ASTBuilder {
                 }
             }
         }
+    }
+    
+    private void convertStringExpression(CSTNode strExpr, ASTNode parent) {
+        
+        StringBuilder sb = new StringBuilder();
+        
+        for (CSTNode chList : strExpr.getChildren()) {
+            if (chList.getName().equals("CharList")) {
+                for (CSTNode ch : chList.getChildren()) {
+                    sb.append(ch.getToken().getLexeme());
+                }
+            }
+        }
+    
+        Token quoteTok = strExpr.getChildren().get(0).getToken();
+        int line   = quoteTok != null ? quoteTok.getLine()   : 0;
+        int column = quoteTok != null ? quoteTok.getColumn() : 0;
+        ASTNode lit = new ASTNode("StringLiteral", sb.toString(), line, column);
+        parent.addChild(lit);
     }
 } 

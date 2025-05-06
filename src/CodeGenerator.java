@@ -31,9 +31,13 @@ public class CodeGenerator {
     private java.util.Map<String, Integer> variableAddresses;
     private int labelCounter = 0;
     
-    private static final int TEMP_RESULT_ADDRESS = 0x00FF;
+    // Temporary memory locations 
+    private static final int TEMP_RESULT_ADDRESS = 0x00FC; 
+    private static final int TEMP_LEFT_OPERAND = 0x00FF;
+    private static final int TEMP_RIGHT_OPERAND = 0x00FE;
+    private static final int TEMP_STRING_PTR = 0x00FD;
     
-    private static final int STRING_MEMORY_START = 0x0100;
+    private static final int STRING_MEMORY_START = 0x0090;
     private int currentStringAddress;
     private java.util.Map<String, Integer> stringAddresses;
     
@@ -81,6 +85,7 @@ public class CodeGenerator {
         // First pass
         appendComment("6502a Machine Code - Generated from source");
         appendComment("Memory allocation starts at " + toHexString(MEMORY_START));
+        appendComment("String storage starts at " + toHexString(STRING_MEMORY_START));
         
         generateCode(ast);
         
@@ -88,6 +93,23 @@ public class CodeGenerator {
         
         // Second pass - resolve branch offsets
         resolveBranchOffsets();
+        
+        // Output all string literals
+        appendComment("String Data Section (Zero Page)");
+        for (java.util.Map.Entry<String, Integer> entry : stringAddresses.entrySet()) {
+            String stringValue = entry.getKey();
+            int address = entry.getValue();
+            
+            appendComment("String: \"" + stringValue + "\" at " + toHexString(address));
+            
+            //  ASCII bytes for each char in the string
+            for (int i = 0; i < stringValue.length(); i++) {
+                char c = stringValue.charAt(i);
+                machineCode.append(String.format("   %02X ; '%c'\n", (int)c, c));
+            }
+            
+            machineCode.append("   00 ; null terminator\n");
+        }
         
         return machineCode.toString();
     }
@@ -181,24 +203,53 @@ public class CodeGenerator {
             appendComment("ERROR: Print statement with no expression");
             return;
         }
-        
+     
         appendComment("Print Statement");
         
         ASTNode exprNode = node.getChildren().get(0);
         
-        generateCode(exprNode);
+        ASTNode literal = exprNode;
+        if ("Expression".equals(literal.getType()) && literal.getChildren().size() == 1) {
+            literal = literal.getChildren().get(0);
+        }
         
-        append(STA, "STA", "Store accumulator value in temporary memory");
-        emitAddress(TEMP_RESULT_ADDRESS);
-
-        append(LDY_MEM, "LDY", "Load Y register from temporary memory");
-        emitAddress(TEMP_RESULT_ADDRESS);
+        // check type of expression to determine how to print it
+        if (literal.getType().equals("StringLiteral")) {
         
-        // Load into X register
-        append(LDX_CONST, "LDX", "Load system call code for print integer");
-        machineCode.append(String.format("   %02X\n", SYS_PRINT_INT & 0xFF));
-        
-        append(SYS, "SYS", "System call - Print integer");
+            String s = literal.getValue();
+            int addr = allocateStringMemory(s);
+            appendComment("Print String");
+            // load low byte into A
+            append(LDA_CONST, "LDA", "Load address of string \"" + s + "\"");
+            emitImmediate(addr & 0xFF);
+            
+            append(STA, "STA", "Store string address in temp");
+            emitAddress(TEMP_STRING_PTR);
+           
+            append(LDY_MEM, "LDY", "Load Y with string address from temp");
+            emitAddress(TEMP_STRING_PTR);
+            
+            append(LDX_CONST, "LDX", "Load system call code for print string");
+            emitImmediate(SYS_PRINT_STRING);
+            append(SYS, "SYS", "System call - Print string");
+            return;
+        } else {
+            // Default int print
+            appendComment("Print Integer");
+            generateCode(exprNode);
+            
+            append(STA, "STA", "Store accumulator value in temporary memory");
+            emitAddress(TEMP_LEFT_OPERAND);
+    
+            append(LDY_MEM, "LDY", "Load Y register from temporary memory");
+            emitAddress(TEMP_LEFT_OPERAND);
+            
+            // Load into X register
+            append(LDX_CONST, "LDX", "Load system call code for print integer");
+            emitImmediate(SYS_PRINT_INT);
+            
+            append(SYS, "SYS", "System call - Print integer");
+        }
     }
     
     private void generateVarDeclCode(ASTNode node) {
@@ -247,7 +298,7 @@ public class CodeGenerator {
         // load the literal value into the accumulator
         int value = Integer.parseInt(node.getValue());
         append(LDA_CONST, "LDA", "Load value " + value);
-        machineCode.append(String.format("   %02X\n", value & 0xFF));
+        emitImmediate(value);
     }
     
     private void generateStringLiteralCode(ASTNode node) {
@@ -263,7 +314,7 @@ public class CodeGenerator {
         }
         
         append(LDA_CONST, "LDA", "Load address of string \"" + stringValue + "\"");
-        emitAddress(address);
+        emitImmediate(address & 0xFF);
     }
     
     private void generateIdentifierCode(ASTNode node) {
@@ -293,13 +344,13 @@ public class CodeGenerator {
         generateCode(leftOperand);
         
         append(STA, "STA", "Store left operand result to temp memory");
-        emitAddress(TEMP_RESULT_ADDRESS);
+        emitAddress(TEMP_LEFT_OPERAND);
         
         ASTNode rightOperand = node.getChildren().get(1);
         generateCode(rightOperand);
         
         append(ADC, "ADC", "Add left operand to accumulator");
-        emitAddress(TEMP_RESULT_ADDRESS);
+        emitAddress(TEMP_LEFT_OPERAND);
     }
     
     private void generateEqualsCode(ASTNode node) {
@@ -313,34 +364,39 @@ public class CodeGenerator {
         ASTNode leftOperand = node.getChildren().get(0);
         generateCode(leftOperand);
         
-        append(LDX_CONST, "LDX", "Transfer accumulator to X register");
-        machineCode.append("   00\n"); // Placeholder for transfer logic
+        append(STA, "STA", "Store left operand to temporary memory");
+        emitAddress(TEMP_LEFT_OPERAND);
+        
+        append(LDX_MEM, "LDX", "Load left operand from temp into X");
+        emitAddress(TEMP_LEFT_OPERAND);
         
         ASTNode rightOperand = node.getChildren().get(1);
         generateCode(rightOperand);
         
-        String trueLabel = generateLabel("equal_true");
+        append(STA, "STA", "Store right operand to temporary memory");
+        emitAddress(TEMP_RIGHT_OPERAND);
+        
+        append(CPX, "CPX", "Compare left operand (X) with right operand (in memory)");
+        emitAddress(TEMP_RIGHT_OPERAND);
+        
         String doneLabel = generateLabel("equal_done");
         
-        append(STA, "STA", "Store right operand to temporary memory");
-        machineCode.append("   ").append(toHexWithoutPrefix(TEMP_RESULT_ADDRESS)).append("\n");
         
-        append(CPX, "CPX", "Compare X register with memory");
-        machineCode.append("   ").append(toHexWithoutPrefix(TEMP_RESULT_ADDRESS)).append("\n");
+        append(LDA_CONST, "LDA", "Load 0 (false) into accumulator assuming inequality");
+        emitImmediate(0);
         
-        appendComment("Branch if equal (Z flag = 1)");
+        // Skip to end if Z flag is 0 )
+        int branchPos = getCurrentPosition();
+        append(BNE, "BNE", "Branch to " + doneLabel + " if not equal (Z=0)");
+        insertPlaceholder();
+        addBranchFix(doneLabel, branchPos);
         
-        append(LDA_CONST, "LDA", "Load 0 (false) into accumulator");
-        machineCode.append("   00\n");
-        
-        append(BNE, "BNE", "Branch if not equal to " + doneLabel);
-        machineCode.append("   ").append("XX\n"); // Placeholder for branch offset
-        
-        appendComment(trueLabel + ":");
+        // If here they are equal, load 1 
         append(LDA_CONST, "LDA", "Load 1 (true) into accumulator");
-        machineCode.append("   01\n");
+        emitImmediate(1);
         
-        appendComment(doneLabel + ":");
+        defineLabel(doneLabel);
+        appendComment("End of equality comparison");
     }
     
     private void generateNotEqualsCode(ASTNode node) {
@@ -354,34 +410,36 @@ public class CodeGenerator {
         ASTNode leftOperand = node.getChildren().get(0);
         generateCode(leftOperand);
         
-        append(LDX_CONST, "LDX", "Transfer accumulator to X register");
-        machineCode.append("   00\n");
+        append(STA, "STA", "Store left operand to temporary memory");
+        emitAddress(TEMP_LEFT_OPERAND);
+        
+        append(LDX_MEM, "LDX", "Load left operand from temp into X");
+        emitAddress(TEMP_LEFT_OPERAND);
         
         ASTNode rightOperand = node.getChildren().get(1);
         generateCode(rightOperand);
         
-        String trueLabel = generateLabel("not equal true");
-        String doneLabel = generateLabel("not equal done");
-        
         append(STA, "STA", "Store right operand to temporary memory");
-        machineCode.append("   ").append(toHexWithoutPrefix(TEMP_RESULT_ADDRESS)).append("\n");
+        emitAddress(TEMP_RIGHT_OPERAND);
         
-        append(CPX, "CPX", "Compare X register with memory");
-        machineCode.append("   ").append(toHexWithoutPrefix(TEMP_RESULT_ADDRESS)).append("\n");
+        append(CPX, "CPX", "Compare left operand (X) with right operand (in memory)");
+        emitAddress(TEMP_RIGHT_OPERAND);
         
-        appendComment("Branch if not equal (Z flag = 0)");
+        String doneLabel = generateLabel("not_equal_done");
         
-        append(LDA_CONST, "LDA", "Load 1 (true) into accumulator");
-        machineCode.append("   01\n");
+        append(LDA_CONST, "LDA", "Load 0 (false) into accumulator assuming equality");
+        emitImmediate(0);
         
-        append(BNE, "BNE", "Branch if not equal to " + doneLabel);
-        machineCode.append("   ").append("XX\n"); 
+        int branchPos = getCurrentPosition();
+        append(BNE, "BNE", "Branch to " + doneLabel + " if not equal (Z=0)");
+        insertPlaceholder();
+        addBranchFix(doneLabel, branchPos);
         
-        appendComment(trueLabel + ":");
-        append(LDA_CONST, "LDA", "Load 0 (false) into accumulator");
-        machineCode.append("   00\n");
+        append(LDA_CONST, "LDA", "Load 1 (true) into accumulator for inequality");
+        emitImmediate(1);
         
-        appendComment(doneLabel + ":");
+        defineLabel(doneLabel);
+        appendComment("End of inequality comparison");
     }
     
     private void generateIfCode(ASTNode node) {
@@ -398,13 +456,13 @@ public class CodeGenerator {
         String skipBlockLabel = generateLabel("if_skip_block");
         
         append(STA, "STA", "Store condition result");
-        emitAddress(TEMP_RESULT_ADDRESS);
+        emitAddress(TEMP_LEFT_OPERAND);
         
         append(LDX_CONST, "LDX", "Load 1 for comparison");
-        machineCode.append("   01\n");
+        emitImmediate(1);
         
         append(CPX, "CPX", "Compare condition with 1");
-        emitAddress(TEMP_RESULT_ADDRESS);
+        emitAddress(TEMP_LEFT_OPERAND);
         
         // position for branch fix
         int branchPos = getCurrentPosition();
@@ -443,13 +501,13 @@ public class CodeGenerator {
         generateCode(conditionNode);
         
         append(STA, "STA", "Store condition result");
-        emitAddress(TEMP_RESULT_ADDRESS);
+        emitAddress(TEMP_LEFT_OPERAND);
         
         append(LDX_CONST, "LDX", "Load 0 for comparison");
-        machineCode.append("   00\n");
+        emitImmediate(0);
         
         append(CPX, "CPX", "Compare condition with 0");
-        emitAddress(TEMP_RESULT_ADDRESS);
+        emitAddress(TEMP_LEFT_OPERAND);
         
         // position for branch fix
         int branchPos = getCurrentPosition();
@@ -462,14 +520,13 @@ public class CodeGenerator {
         ASTNode blockNode = node.getChildren().get(1);
         generateCode(blockNode);
         
+        // Always branch back to the start of the loop
+        append(LDA_CONST, "LDA", "Load 1 to make sure we always loop back");
+        emitImmediate(1);
        
         int jumpBranchPos = getCurrentPosition();
         append(BNE, "BNE", "Jump back to start of while loop");
         insertPlaceholder();
-        
-        // Always load 1 to ensure branch happens
-        append(LDA_CONST, "LDA", "Load 1 to make sure we always loop back");
-        machineCode.append("   01\n");
         
         // Add branch fix for the backward jump
         addBranchFix(whileStartLabel, jumpBranchPos);
@@ -518,12 +575,10 @@ public class CodeGenerator {
         machineCode.append("\n");
     }
     
- 
     private void appendComment(String comment) {
         machineCode.append("; ").append(comment).append("\n");
     }
     
-   
     private String toHexString(int value) {
         return "$" + Integer.toHexString(value).toUpperCase();
     }
@@ -542,10 +597,10 @@ public class CodeGenerator {
                 // true or false
                 if (boolValue.equals("true")) {
                     append(LDA_CONST, "LDA", "Load 1 (true)");
-                    machineCode.append(String.format("   %02X\n", 1));
+                    emitImmediate(1);
                 } else {
                     append(LDA_CONST, "LDA", "Load 0 (false)");
-                    machineCode.append(String.format("   %02X\n", 0));
+                    emitImmediate(0);
                 }
                 return;
             }
@@ -563,23 +618,45 @@ public class CodeGenerator {
         generateCode(leftNode);
         
         append(STA, "STA", "Store left operand");
-        emitAddress(TEMP_RESULT_ADDRESS);
+        emitAddress(TEMP_LEFT_OPERAND);
         
         append(LDX_MEM, "LDX", "Load X with left operand");
-        emitAddress(TEMP_RESULT_ADDRESS);
+        emitAddress(TEMP_LEFT_OPERAND);
         
         generateCode(rightNode);
         
-        append(CPX, "CPX", "Compare left operand with right operand");
-        emitAddress(TEMP_RESULT_ADDRESS);
+        append(STA, "STA", "Store right operand to temporary memory");
+        emitAddress(TEMP_RIGHT_OPERAND);
         
-        append(LDA_CONST, "LDA", "Load 1 (true)");
-        machineCode.append(String.format("   %02X\n", 1));
+        append(CPX, "CPX", "Compare left operand with right operand");
+        emitAddress(TEMP_RIGHT_OPERAND);
+        
+        String doneLabel = generateLabel("bool_expr_done");
+        
+        append(LDA_CONST, "LDA", "Load 0 (false) into accumulator by default");
+        emitImmediate(0);
+        
+        int branchPos = getCurrentPosition();
+        append(BNE, "BNE", "Branch to " + doneLabel + " if not equal (Z=0)");
+        
+        insertPlaceholder();
+        addBranchFix(doneLabel, branchPos);
+        
+        append(LDA_CONST, "LDA", "Load 1 (true) into accumulator for equality");
+        emitImmediate(1);
+        
+        defineLabel(doneLabel);
+        appendComment("End of boolean expression");
     }
     
-    // creats a two byte little endian address
+    // creates a two byte little endian address
     private void emitAddress(int addr) {
         machineCode.append(String.format("   %02X %02X\n", addr & 0xFF, (addr >> 8) & 0xFF));
+    }
+
+    // creates a one byte immediate value
+    private void emitImmediate(int value) {
+        machineCode.append(String.format("   %02X\n", value & 0xFF));
     }
 
     private int getCurrentPosition() {
@@ -603,6 +680,7 @@ public class CodeGenerator {
             System.out.println("CODE GENERATOR: Defined label '" + label + "' at position " + position);
         }
     }
+    
     private void addBranchFix(String targetLabel, int position) {
         branchFix.add(new BranchFix(targetLabel, position));
         
@@ -615,7 +693,7 @@ public class CodeGenerator {
     private void insertPlaceholder() {
         machineCode.append("   XX\n");
     }
- 
+    
     private void resolveBranchOffsets() {
        
         String[] lines = machineCode.toString().split("\n");
@@ -651,8 +729,13 @@ public class CodeGenerator {
             int offsetByte = branchOffset < 0 ? 256 + branchOffset : branchOffset;
             
             String fixedLine = String.format("   %02X", offsetByte & 0xFF);
-            if (branchPosition + 1 < lines.length) {
-                lines[branchPosition + 1] = fixedLine;
+            
+            // finds the next placeholder line and replace it
+            for (int i = 0; i < lines.length; i++) {
+                if (lines[i].trim().equals("XX")) {
+                    lines[i] = fixedLine;
+                    break;
+                }
             }
         }
         
