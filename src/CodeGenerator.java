@@ -27,8 +27,7 @@ public class CodeGenerator {
     private static final int MEMORY_START = 0x0080;
     
     private int currentMemoryAddress;
-
-    private java.util.Map<String, Integer> variableAddresses;
+    private java.util.Map<Symbol, Integer> symbolAddressMap;
     private int labelCounter = 0;
     
     // Temporary memory locations 
@@ -64,7 +63,7 @@ public class CodeGenerator {
         this.machineCode = new StringBuilder();
         this.codeBuffer = new StringBuilder();
         this.currentMemoryAddress = MEMORY_START;
-        this.variableAddresses = new java.util.HashMap<>();
+        this.symbolAddressMap = new java.util.HashMap<>();
         this.currentStringAddress = STRING_MEMORY_START;
         this.stringAddresses = new java.util.HashMap<>();
         this.labelPositions = new java.util.HashMap<>();
@@ -81,6 +80,7 @@ public class CodeGenerator {
         codeBuffer.setLength(0);
         labelPositions.clear();
         branchFix.clear();
+        symbolAddressMap.clear();
         
         // First pass
         appendComment("6502a Machine Code - Generated from source");
@@ -188,14 +188,15 @@ public class CodeGenerator {
     }
     
     private void generateBlockCode(ASTNode node) {
-        appendComment("Block Start");
-        
-        // Process each child node in the block
+        symbolTable.enterScope(); // Manage SymbolTable's current scope
+        appendComment("Block Start (Scope Entered)"); // Log scope entry
+
         for (ASTNode child : node.getChildren()) {
             generateCode(child);
         }
         
-        appendComment("Block End");
+        appendComment("Block End (Scope Exited)"); 
+        symbolTable.exitScope(); 
     }
     
     private void generatePrintCode(ASTNode node) {
@@ -253,22 +254,39 @@ public class CodeGenerator {
     }
     
     private void generateVarDeclCode(ASTNode node) {
-        // type and identifier
         if (node.getChildren().size() >= 2) {
             ASTNode typeNode = node.getChildren().get(0);
             ASTNode idNode = node.getChildren().get(1);
-            
             String varType = typeNode.getValue();
             String varName = idNode.getValue();
-            
-            // Allocate memory for this variable
-            int address = allocateMemory(varName);
-            
-            if (verboseMode) {
-                System.out.println("CODE GENERATOR: Allocated variable '" + varName + "' at address " + toHexString(address));
+
+            // this will find the symbol for the current scope
+            Symbol symbol = symbolTable.lookup(varName);
+
+            if (symbol == null) {
+                
+                appendComment("ERROR: Symbol not found during CodeGen for variable: " + varName);
+                return;
+            }
+
+            int allocatedAddress;
+            // Check if this has already been given an address
+            if (!symbolAddressMap.containsKey(symbol)) {
+                allocatedAddress = currentMemoryAddress;
+                symbolAddressMap.put(symbol, allocatedAddress);
+                currentMemoryAddress += 1; 
+            } else {
+                // Fallback
+                allocatedAddress = symbolAddressMap.get(symbol);
+                if (verboseMode) {
+                    System.out.println("CODE GENERATOR: WARNING - Symbol " + varName + " (Scope: " + symbol.getScope() + ") already had an address in VarDecl. Reusing: " + toHexString(allocatedAddress));
+                }
             }
             
-            appendComment("Variable Declaration: " + varType + " " + varName + " at address " + toHexString(address));
+            if (verboseMode) {
+                System.out.println("CODE GENERATOR: Allocated variable '" + varName + "' (Scope: " + symbol.getScope() + ") at address " + toHexString(allocatedAddress));
+            }
+            appendComment("Variable Declaration: " + varType + " " + varName + " (Scope: " + symbol.getScope() + ") at address " + toHexString(allocatedAddress));
         }
     }
     
@@ -276,19 +294,21 @@ public class CodeGenerator {
         if (node.getChildren().size() >= 2) {
             ASTNode idNode = node.getChildren().get(0);
             ASTNode exprNode = node.getChildren().get(1);
-            
             String varName = idNode.getValue();
-            Integer address = variableAddresses.get(varName);
-            
+
+            Symbol symbol = symbolTable.lookup(varName);
+            if (symbol == null) {
+                appendComment("ERROR: CodeGen - Undefined variable for assignment: " + varName);
+                return;
+            }
+            Integer address = symbolAddressMap.get(symbol); 
             if (address == null) {
-                appendComment("ERROR: Undefined variable: " + varName);
+                appendComment("ERROR: CodeGen - Address not found for assignment to variable: " + varName + " (Symbol: " + symbol + ", Scope: " + symbol.getScope() + ")");
                 return;
             }
             
-            appendComment("Assignment to variable " + varName);
-            
-            generateCode(exprNode);
-            
+            appendComment("Assignment to variable " + varName + " (Scope: " + symbol.getScope() + ")");
+            generateCode(exprNode); // evaluate expression result in Accumulator
             append(STA, "STA", "Store accumulator to " + varName + " at " + toHexString(address));
             emitAddress(address);
         }
@@ -318,17 +338,20 @@ public class CodeGenerator {
     }
     
     private void generateIdentifierCode(ASTNode node) {
-        // Load the var value into the accumulator
         String varName = node.getValue();
-        Integer address = variableAddresses.get(varName);
-        
+        Symbol symbol = symbolTable.lookup(varName); // correctly scoped lookup
+
+        if (symbol == null) {
+            appendComment("ERROR: CodeGen - Undefined identifier: " + varName);
+            return;
+        }
+        Integer address = symbolAddressMap.get(symbol); // Get address for this Symbol instance
         if (address == null) {
-            appendComment("ERROR: Undefined variable: " + varName);
+            appendComment("ERROR: CodeGen - Address not found for identifier: " + varName + " (Symbol: " + symbol + ", Scope: " + symbol.getScope() + ")");
             return;
         }
         
-        // Load from vars memory location to accumulator
-        append(LDA_MEM, "LDA", "Load " + varName + " from " + toHexString(address));
+        append(LDA_MEM, "LDA", "Load " + varName + " (Scope: " + symbol.getScope() + ") from " + toHexString(address));
         emitAddress(address);
     }
     
@@ -534,20 +557,6 @@ public class CodeGenerator {
         defineLabel(whileEndLabel);
         
         appendComment("End of while loop");
-    }
-    
-    private int allocateMemory(String varName) {
-        
-        if (variableAddresses.containsKey(varName)) {
-            return variableAddresses.get(varName);
-        }
-        
-        int address = currentMemoryAddress;
-        variableAddresses.put(varName, address);
-        
-        currentMemoryAddress += 1;
-        
-        return address;
     }
     
     private int allocateStringMemory(String stringValue) {
