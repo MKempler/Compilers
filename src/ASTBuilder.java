@@ -306,6 +306,31 @@ public class ASTBuilder {
                 return;
             }
             
+            //  addition operation
+            if (exprChild.getName().equals("Integer Expression") && exprChild.getChildren().size() >= 3 && 
+                exprChild.getChildren().get(1).getToken().getLexeme().equals("+")) {
+                
+                //  Addition node
+                int line = exprChild.getChildren().get(1).getToken().getLine();
+                int column = exprChild.getChildren().get(1).getToken().getColumn();
+                ASTNode additionNode = new ASTNode("Addition", line, column);
+                parentNode.addChild(additionNode);
+                
+                // Convert left operand 
+                CSTNode leftOperand = exprChild.getChildren().get(0);
+                String leftValue = leftOperand.getToken().getLexeme();
+                ASTNode leftNode = new ASTNode("Value", leftValue, 
+                                             leftOperand.getToken().getLine(), 
+                                             leftOperand.getToken().getColumn());
+                additionNode.addChild(leftNode);
+                
+                // Convert right operand 
+                CSTNode rightExprNode = exprChild.getChildren().get(2);
+                convertExpression(rightExprNode, additionNode);
+                
+                return;
+            }
+            
             if (exprChild.isTerminal()) {
                 String value = exprChild.getToken().getLexeme();
                 int line = exprChild.getToken().getLine();
