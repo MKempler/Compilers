@@ -364,16 +364,19 @@ public class CodeGenerator {
         appendComment("Addition expression");
         
         ASTNode leftOperand = node.getChildren().get(0);
-        generateCode(leftOperand);
-        
-        append(STA, "STA", "Store left operand result to temp memory");
-        emitAddress(TEMP_LEFT_OPERAND);
-        
         ASTNode rightOperand = node.getChildren().get(1);
+
+        // evaluate the right operand first
         generateCode(rightOperand);
         
-        append(ADC, "ADC", "Add left operand to accumulator");
-        emitAddress(TEMP_LEFT_OPERAND);
+        append(STA, "STA", "Store right operand result to temp memory");
+        emitAddress(TEMP_RIGHT_OPERAND);
+        
+        // now evaluate the left opwhat serand
+        generateCode(leftOperand); 
+        
+        append(ADC, "ADC", "Add right operand (from temp) to accumulator (left operand)");
+        emitAddress(TEMP_RIGHT_OPERAND);
     }
     
     private void generateEqualsCode(ASTNode node) {
