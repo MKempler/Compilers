@@ -11,32 +11,29 @@ public class CodeGenerator {
     private static final String ADC = "6D";         
     private static final String LDX_CONST = "A2";  
     private static final String LDX_MEM = "AE";     
-    private static final String LDY_CONST = "A0";   
     private static final String LDY_MEM = "AC";     
     private static final String NOP = "EA";          
     private static final String CPX = "EC";        
     private static final String BNE = "D0";         
-    private static final String INC = "EE";        
     private static final String SYS = "FF";
     private static final String BRK = "00";
     
     // System call values
     private static final int SYS_PRINT_INT = 1;  
     private static final int SYS_PRINT_STRING = 2; 
-    
-    private static final int MEMORY_START = 0x0080;
+
+    private static final int MEMORY_START        = 0x00C0;   // User variables start here
+
+    private static final int TEMP_RIGHT_OPERAND = 0x00DC;
+    private static final int TEMP_LEFT_OPERAND  = 0x00DD;
+    private static final int TEMP_STRING_PTR    = 0x00DE;
+
+    private static final int STRING_MEMORY_START = 0x00E0;   // String pool starts here 
     
     private int currentMemoryAddress;
     private java.util.Map<Symbol, Integer> symbolAddressMap;
     private int labelCounter = 0;
     
-    // Temporary memory locations 
-    private static final int TEMP_RESULT_ADDRESS = 0x00FC; 
-    private static final int TEMP_LEFT_OPERAND = 0x00FF;
-    private static final int TEMP_RIGHT_OPERAND = 0x00FE;
-    private static final int TEMP_STRING_PTR = 0x00FD;
-    
-    private static final int STRING_MEMORY_START = 0x0090;
     private int currentStringAddress;
     private java.util.Map<String, Integer> stringAddresses;
     
@@ -45,14 +42,18 @@ public class CodeGenerator {
     private java.util.Map<String, Integer> labelPositions;
     private java.util.List<BranchFix> branchFix;
     
+    private int byteCounter = 0;
+    
     // track branch instruction
     private static class BranchFix {
         final String targetLabel;
         final int instructionPosition;
+        int placeholderIndex;
         
-        BranchFix(String targetLabel, int instructionPosition) {
+        BranchFix(String targetLabel, int instructionPosition, int placeholderIndex) {
             this.targetLabel = targetLabel;
             this.instructionPosition = instructionPosition;
+            this.placeholderIndex = placeholderIndex;
         }
     }
     
@@ -81,6 +82,7 @@ public class CodeGenerator {
         labelPositions.clear();
         branchFix.clear();
         symbolAddressMap.clear();
+        byteCounter = 0;
         
         // First pass
         appendComment("6502a Machine Code - Generated from source");
@@ -106,9 +108,15 @@ public class CodeGenerator {
             for (int i = 0; i < stringValue.length(); i++) {
                 char c = stringValue.charAt(i);
                 machineCode.append(String.format("   %02X ; '%c'\n", (int)c, c));
+                byteCounter++;
             }
             
             machineCode.append("   00 ; null terminator\n");
+            byteCounter++;
+        }
+        
+        if (byteCounter > 256) {
+            throw new RuntimeException("Program exceeds 256 byte memory image (" + byteCounter + " bytes)");
         }
         
         return machineCode.toString();
@@ -411,7 +419,7 @@ public class CodeGenerator {
         append(LDA_CONST, "LDA", "Load 0 (false) into accumulator assuming inequality");
         emitImmediate(0);
         
-        // Skip to end if Z flag is 0 )
+        // Skip to end if Z flag is 0
         int branchPos = getCurrentPosition();
         append(BNE, "BNE", "Branch to " + doneLabel + " if not equal (Z=0)");
         insertPlaceholder();
@@ -585,6 +593,7 @@ public class CodeGenerator {
             machineCode.append(" - ").append(comment);
         }
         machineCode.append("\n");
+        byteCounter++;
     }
     
     private void appendComment(String comment) {
@@ -593,10 +602,6 @@ public class CodeGenerator {
     
     private String toHexString(int value) {
         return "$" + Integer.toHexString(value).toUpperCase();
-    }
-    
-    private String toHexWithoutPrefix(int value) {
-        return Integer.toHexString(value).toUpperCase();
     }
     
     private void generateBooleanExpressionCode(ASTNode node) {
@@ -664,27 +669,22 @@ public class CodeGenerator {
     // creates a two byte little endian address
     private void emitAddress(int addr) {
         machineCode.append(String.format("   %02X %02X\n", addr & 0xFF, (addr >> 8) & 0xFF));
+        byteCounter++;
+        byteCounter++;
     }
 
     // creates a one byte immediate value
     private void emitImmediate(int value) {
         machineCode.append(String.format("   %02X\n", value & 0xFF));
+        byteCounter++;
     }
 
     private int getCurrentPosition() {
-        // count the lines in the machineCode that contain actual code 
-        String[] lines = machineCode.toString().split("\n");
-        int codeLines = 0;
-        for (String line : lines) {
-            if (!line.trim().startsWith(";") && !line.trim().isEmpty()) {
-                codeLines++;
-            }
-        }
-        return codeLines;
+        return byteCounter;
     }
     
     private void defineLabel(String label) {
-        int position = getCurrentPosition();
+        int position = byteCounter;
         labelPositions.put(label, position);
         appendComment("LABEL: " + label);
         
@@ -694,26 +694,28 @@ public class CodeGenerator {
     }
     
     private void addBranchFix(String targetLabel, int position) {
-        branchFix.add(new BranchFix(targetLabel, position));
-        
+        int placeholderIndex = lastPlaceholderIndex;
+        branchFix.add(new BranchFix(targetLabel, position, placeholderIndex));
         if (verboseMode) {
             System.out.println("CODE GENERATOR: Added branch fix for label '" + targetLabel + 
-                              "' at position " + position);
+                              "' at position " + position + ", placeholderIndex=" + placeholderIndex);
         }
     }
     
-    private void insertPlaceholder() {
+    private int lastPlaceholderIndex = -1;
+    private int insertPlaceholder() {
+        int pos = machineCode.length();
         machineCode.append("   XX\n");
+        byteCounter++;
+        lastPlaceholderIndex = pos;
+        return pos;
     }
     
     private void resolveBranchOffsets() {
-       
-        String[] lines = machineCode.toString().split("\n");
-        
-        for (BranchFix fixup : branchFix) {
+        for (int i = 0; i < branchFix.size(); i++) {
+            BranchFix fixup = branchFix.get(i);
             String targetLabel = fixup.targetLabel;
             int branchPosition = fixup.instructionPosition;
-            
             Integer targetPosition = labelPositions.get(targetLabel);
             if (targetPosition == null) {
                 if (verboseMode) {
@@ -721,39 +723,44 @@ public class CodeGenerator {
                 }
                 continue;
             }
-            
-            int branchOffset = targetPosition - (branchPosition + 2); 
-            
-            if (verboseMode) {
-                System.out.println("CODE GENERATOR: Branch from position " + branchPosition + 
-                                  " to label " + targetLabel + " at position " + targetPosition + 
-                                  " (offset = " + branchOffset + ")");
-            }
-            
-            if (branchOffset < -128 || branchOffset > 127) {
-                appendComment("ERROR: Branch offset too large: " + branchOffset);
-                if (verboseMode) {
-                    System.out.println("ERROR: Branch offset too large: " + branchOffset);
-                }
-                continue;
-            }
-            
-            int offsetByte = branchOffset < 0 ? 256 + branchOffset : branchOffset;
-            
-            String fixedLine = String.format("   %02X", offsetByte & 0xFF);
-            
-            // finds the next placeholder line and replace it
-            for (int i = 0; i < lines.length; i++) {
-                if (lines[i].trim().equals("XX")) {
-                    lines[i] = fixedLine;
-                    break;
-                }
+            int offset = targetPosition - (branchPosition + 2);
+            if (offset >= -128 && offset <= 127) {
+                writeHexByteAt(fixup.placeholderIndex, offset);
+            } else {
+                // long branch
+                writeHexByteAt(fixup.placeholderIndex, 0x03);
+                // JMP goes right after them
+                insertHexBytes(fixup.placeholderIndex + 6, "4C", toHexLo(targetPosition), toHexHi(targetPosition));
+                byteCounter += 3;
+                shiftPlaceholderIndexes(i + 1, 3);
             }
         }
-        
-        machineCode.setLength(0);
-        for (String line : lines) {
-            machineCode.append(line).append("\n");
+    }
+    // writes a hex byte at a given index in the machine code buffer
+    private void writeHexByteAt(int idx, int value) {
+        String hex = String.format("%02X", value & 0xFF);
+        for (int i = 0; i < 2; i++) {
+            machineCode.setCharAt(idx + 3 + i, hex.charAt(i));
         }
+    }
+    // inserts the hex byte
+    private void insertHexBytes(int idx, String... hexBytes) {
+        StringBuilder sb = new StringBuilder();
+        for (String b : hexBytes) {
+            sb.append("   ").append(b).append("\n");
+        }
+        machineCode.insert(idx, sb.toString());
+    }
+    // update all later placeholder indexes after an insertion
+    private void shiftPlaceholderIndexes(int start, int delta) {
+        for (int i = start; i < branchFix.size(); i++) {
+            branchFix.get(i).placeholderIndex += delta * 6; 
+        }
+    }
+    private String toHexLo(int value) {
+        return String.format("%02X", value & 0xFF);
+    }
+    private String toHexHi(int value) {
+        return String.format("%02X", (value >> 8) & 0xFF);
     }
 } 

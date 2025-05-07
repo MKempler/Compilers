@@ -23,6 +23,7 @@
 - test15.txt: uninitalized variable warning
 - test16.txt variable declaration error
 - test17.txt: type mismatch error
+- test18.txt: nested scopes, loop backpatching across multiple branch instructions
 
 
 ### All test cases passed

@@ -4,6 +4,7 @@ public class Compiler {
     private ASTBuilder astBuilder;
     private boolean verboseMode = true;  //always true for debugging
     private String programText; 
+    private static final int CODE_SECTION_LIMIT = 0x00C0; 
 
    
     public static void main(String[] args) {
@@ -149,8 +150,7 @@ public class Compiler {
                             // Create our 256 byte memory image 
                             byte[] memoryImage = new byte[256];
                             
-                            // Fills the memory image with the generated opcodes
-                            int codeLimit = Math.min(totalBytes, 0x0080);
+                            int codeLimit = Math.min(totalBytes, CODE_SECTION_LIMIT);
                             for (int i = 0; i < codeLimit; i++) {
                                 if (i * 2 + 2 <= opcodes.length()) {
                                     String byteStr = opcodes.substring(i * 2, i * 2 + 2);
@@ -158,8 +158,8 @@ public class Compiler {
                                 }
                             }
                             
-                            // Parse string data section and place it at (0x0090)
-                            int dataAddr = 0x90; 
+                            // Parse string data section 
+                            int dataAddr = 0x00E0;  
                             boolean inData = false;
                             for (String line : machineCode.split("\n")) {
                                 if (line.trim().equals("; String Data Section (Zero Page)")) {
