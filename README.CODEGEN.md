@@ -16,6 +16,13 @@
 - test8.txt: Not equals comparison operator in Boolean expressions
 - test9.txt: Multi level scope nesting with shadowed variable resolution
 - test10.txt: Multiple program test
+- test11.txt: Lexer error test (unterminated string)
+- test12.txt: Parser error test (missing parantheses)
+- test13.txt: Semantic Error test (undeclared variable)
+- test14.txt: Unused variable warning
+- test15.txt: uninitalized variable warning
+- test16.txt variable declaration error
+- test17.txt: type mismatch error
 
 
 ### All test cases passed
