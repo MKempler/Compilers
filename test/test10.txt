@@ -1,0 +1,22 @@
+{
+  int x
+  x = 10
+  print(x)
+}$
+{
+  int a
+  int b
+  a = 5
+  b = 7
+  int c
+  c = 0
+  c = 5 + b
+  print(c)
+}$
+{
+  int c
+  c = 42
+  if (c == 42) {
+    print("answer")
+  }
+}$ 
