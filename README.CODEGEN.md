@@ -24,6 +24,7 @@
 - test16.txt variable declaration error
 - test17.txt: type mismatch error
 - test18.txt: nested scopes, loop backpatching across multiple branch instructions
+- test19.txt: String pool stress test
 
 
 ### All test cases passed

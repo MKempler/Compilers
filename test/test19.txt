@@ -1,0 +1,25 @@
+{
+  string a
+  string b
+  string c
+  string d
+  string e
+  string f
+  string g
+
+  a = "apple"
+  b = "banana"
+  c = "cherry"
+  d = "date"
+  e = "peach"
+  f = "daniel craig"
+  g = "pope leo"
+
+  print(a)
+  print(b)
+  print(c)
+  print(d)
+  print(e)
+  print(f)
+  print (g)
+} $

@@ -28,13 +28,10 @@ public class CodeGenerator {
     private static final int TEMP_LEFT_OPERAND  = 0x00DD;
     private static final int TEMP_STRING_PTR    = 0x00DE;
 
-    private static final int STRING_MEMORY_START = 0x00E0;   // String pool starts here 
-    
     private int currentMemoryAddress;
     private java.util.Map<Symbol, Integer> symbolAddressMap;
     private int labelCounter = 0;
     
-    private int currentStringAddress;
     private java.util.Map<String, Integer> stringAddresses;
     
     // Label resolution
@@ -57,6 +54,9 @@ public class CodeGenerator {
         }
     }
     
+    private java.util.Map<String, java.util.List<Integer>> stringFixups = new java.util.HashMap<>();
+    private java.util.LinkedHashSet<String> uniqueStrings = new java.util.LinkedHashSet<>();
+    
     public CodeGenerator(ASTNode ast, SymbolTable symbolTable, boolean verboseMode) {
         this.ast = ast;
         this.symbolTable = symbolTable;
@@ -65,10 +65,11 @@ public class CodeGenerator {
         this.codeBuffer = new StringBuilder();
         this.currentMemoryAddress = MEMORY_START;
         this.symbolAddressMap = new java.util.HashMap<>();
-        this.currentStringAddress = STRING_MEMORY_START;
         this.stringAddresses = new java.util.HashMap<>();
         this.labelPositions = new java.util.HashMap<>();
         this.branchFix = new java.util.ArrayList<>();
+        this.stringFixups = new java.util.HashMap<>();
+        this.uniqueStrings = new java.util.LinkedHashSet<>();
     }
     
     public String generate() {
@@ -83,11 +84,13 @@ public class CodeGenerator {
         branchFix.clear();
         symbolAddressMap.clear();
         byteCounter = 0;
+        stringFixups.clear();
+        uniqueStrings.clear();
+        stringAddresses.clear();
         
         // First pass
         appendComment("6502a Machine Code - Generated from source");
         appendComment("Memory allocation starts at " + toHexString(MEMORY_START));
-        appendComment("String storage starts at " + toHexString(STRING_MEMORY_START));
         
         generateCode(ast);
         
@@ -96,25 +99,30 @@ public class CodeGenerator {
         // Second pass - resolve branch offsets
         resolveBranchOffsets();
         
-        // Output all string literals
-        appendComment("String Data Section (Zero Page)");
-        for (java.util.Map.Entry<String, Integer> entry : stringAddresses.entrySet()) {
-            String stringValue = entry.getKey();
-            int address = entry.getValue();
+        //String pool
+        for (String s : uniqueStrings) {
+            int addr = byteCounter;
+            stringAddresses.put(s, addr);
+            byte[] bytes = (s + "\0").getBytes(java.nio.charset.StandardCharsets.US_ASCII);
             
-            appendComment("String: \"" + stringValue + "\" at " + toHexString(address));
-            
-            //  ASCII bytes for each char in the string
-            for (int i = 0; i < stringValue.length(); i++) {
-                char c = stringValue.charAt(i);
-                machineCode.append(String.format("   %02X ; '%c'\n", (int)c, c));
+            // Patch all fixups
+            java.util.List<Integer> fixupCharacterIndexes = stringFixups.get(s);
+            if (fixupCharacterIndexes != null) {
+                for (int fixupCharIdx : fixupCharacterIndexes) {
+                    // Patch low byte for LDA
+                    String hexLo = String.format("%02X", addr & 0xFF);
+                    machineCode.setCharAt(fixupCharIdx + 3, hexLo.charAt(0)); // Offset for XX
+                    machineCode.setCharAt(fixupCharIdx + 4, hexLo.charAt(1));
+                }
+            }
+            appendComment("String: \"" + s + "\" at " + toHexString(addr));
+            for (byte b : bytes) {
+                machineCode.append(String.format("   %02X ; '%c'\n", b, (b == 0 ? '\0' : (char)b)));
                 byteCounter++;
             }
-            
-            machineCode.append("   00 ; null terminator\n");
-            byteCounter++;
         }
         
+        appendComment("String Data Section (Zero Page)");
         if (byteCounter > 256) {
             throw new RuntimeException("Program exceeds 256 byte memory image (" + byteCounter + " bytes)");
         }
@@ -212,53 +220,60 @@ public class CodeGenerator {
             appendComment("ERROR: Print statement with no expression");
             return;
         }
-     
+        
         appendComment("Print Statement");
         
         ASTNode exprNode = node.getChildren().get(0);
-        
         ASTNode literal = exprNode;
         if ("Expression".equals(literal.getType()) && literal.getChildren().size() == 1) {
             literal = literal.getChildren().get(0);
         }
-        
-        // check type of expression to determine how to print it
+        // String literal
         if (literal.getType().equals("StringLiteral")) {
-        
             String s = literal.getValue();
-            int addr = allocateStringMemory(s);
+            allocateStringMemory(s);
             appendComment("Print String");
-            // load low byte into A
             append(LDA_CONST, "LDA", "Load address of string \"" + s + "\"");
-            emitImmediate(addr & 0xFF);
-            
+            int pos = machineCode.length();
+            machineCode.append("   XX\n");
+            byteCounter += 1;
+            stringFixups.get(s).add(pos);
             append(STA, "STA", "Store string address in temp");
             emitAddress(TEMP_STRING_PTR);
-           
             append(LDY_MEM, "LDY", "Load Y with string address from temp");
             emitAddress(TEMP_STRING_PTR);
-            
             append(LDX_CONST, "LDX", "Load system call code for print string");
             emitImmediate(SYS_PRINT_STRING);
             append(SYS, "SYS", "System call - Print string");
             return;
-        } else {
-            // Default int print
-            appendComment("Print Integer");
-            generateCode(exprNode);
-            
-            append(STA, "STA", "Store accumulator value in temporary memory");
-            emitAddress(TEMP_LEFT_OPERAND);
-    
-            append(LDY_MEM, "LDY", "Load Y register from temporary memory");
-            emitAddress(TEMP_LEFT_OPERAND);
-            
-            // Load into X register
-            append(LDX_CONST, "LDX", "Load system call code for print integer");
-            emitImmediate(SYS_PRINT_INT);
-            
-            append(SYS, "SYS", "System call - Print integer");
         }
+        // Identifier: check type
+        if (literal.getType().equals("Identifier")) {
+            String varName = literal.getValue();
+            Symbol symbol = symbolTable.lookup(varName);
+            if (symbol != null && symbol.getType().equals("string")) {
+                appendComment("Print String Variable");
+                generateCode(literal); // loads address of string into Accumulator
+                append(STA, "STA", "Store string address in temp");
+                emitAddress(TEMP_STRING_PTR);
+                append(LDY_MEM, "LDY", "Load Y with string address from temp");
+                emitAddress(TEMP_STRING_PTR);
+                append(LDX_CONST, "LDX", "Load system call code for print string");
+                emitImmediate(SYS_PRINT_STRING);
+                append(SYS, "SYS", "System call - Print string");
+                return;
+            }
+        }
+        // Default int print
+        appendComment("Print Integer");
+        generateCode(exprNode);
+        append(STA, "STA", "Store accumulator value in temporary memory");
+        emitAddress(TEMP_LEFT_OPERAND);
+        append(LDY_MEM, "LDY", "Load Y register from temporary memory");
+        emitAddress(TEMP_LEFT_OPERAND);
+        append(LDX_CONST, "LDX", "Load system call code for print integer");
+        emitImmediate(SYS_PRINT_INT);
+        append(SYS, "SYS", "System call - Print integer");
     }
     
     private void generateVarDeclCode(ASTNode node) {
@@ -330,19 +345,13 @@ public class CodeGenerator {
     }
     
     private void generateStringLiteralCode(ASTNode node) {
-        // Get string value
         String stringValue = node.getValue();
-        
-        // Check if we've already allocated this string
-        Integer address = stringAddresses.get(stringValue);
-        
-        if (address == null) {
-            address = allocateStringMemory(stringValue);
-            appendComment("String literal: \"" + stringValue + "\" stored at " + toHexString(address));
-        }
-        
+        allocateStringMemory(stringValue);
         append(LDA_CONST, "LDA", "Load address of string \"" + stringValue + "\"");
-        emitImmediate(address & 0xFF);
+        int pos = machineCode.length();
+        machineCode.append("   XX\n");
+        byteCounter += 1;
+        stringFixups.get(stringValue).add(pos);
     }
     
     private void generateIdentifierCode(ASTNode node) {
@@ -571,16 +580,11 @@ public class CodeGenerator {
     }
     
     private int allocateStringMemory(String stringValue) {
-        if (stringAddresses.containsKey(stringValue)) {
-            return stringAddresses.get(stringValue);
+        uniqueStrings.add(stringValue);
+        if (!stringFixups.containsKey(stringValue)) {
+            stringFixups.put(stringValue, new java.util.ArrayList<>());
         }
-        
-        int address = currentStringAddress;
-        stringAddresses.put(stringValue, address);
-        
-        currentStringAddress += stringValue.length() + 1;
-        
-        return address;
+        return 0;
     }
     
     private String generateLabel(String prefix) {
@@ -730,9 +734,11 @@ public class CodeGenerator {
                 // long branch
                 writeHexByteAt(fixup.placeholderIndex, 0x03);
                 // JMP goes right after them
-                insertHexBytes(fixup.placeholderIndex + 6, "4C", toHexLo(targetPosition), toHexHi(targetPosition));
+                int insertionPoint = fixup.placeholderIndex + 6;
+                insertHexBytes(insertionPoint, "4C", toHexLo(targetPosition), toHexHi(targetPosition));
                 byteCounter += 3;
-                shiftPlaceholderIndexes(i + 1, 3);
+                int charDelta = 18; 
+                shiftPlaceholderIndexes(i + 1, charDelta, insertionPoint);
             }
         }
     }
@@ -752,9 +758,18 @@ public class CodeGenerator {
         machineCode.insert(idx, sb.toString());
     }
     // update all later placeholder indexes after an insertion
-    private void shiftPlaceholderIndexes(int start, int delta) {
+    private void shiftPlaceholderIndexes(int start, int charDelta, int insertionPoint) {
+        // Shift branch fixups
         for (int i = start; i < branchFix.size(); i++) {
-            branchFix.get(i).placeholderIndex += delta * 6; 
+            branchFix.get(i).placeholderIndex += charDelta;
+        }
+        // Shift string fixups
+        for (java.util.List<Integer> fixupList : stringFixups.values()) {
+            for (int i = 0; i < fixupList.size(); i++) {
+                if (fixupList.get(i) > insertionPoint) {
+                    fixupList.set(i, fixupList.get(i) + charDelta);
+                }
+            }
         }
     }
     private String toHexLo(int value) {
