@@ -1,47 +1,58 @@
-# Lexer - Project 1
+# Code Generation
 
-## Setup:
-1. cd src
-2. Compile: javac *.java
-3. Run tests: java Compiler ../test/<input_file>
+Phase 4 of a complete compiler for a small C-like language, in Java — and the finished product. Walks the abstract syntax tree from [semantic analysis](https://github.com/MKempler/Compilers/tree/SemanticAnalysis) and emits machine code for a 6502-inspired target, producing a 256-byte memory image runnable on an emulator.
 
-## My test files:
-- test1.txt: Empty file test
-- test2.txt: normal comment test 
-- test3.txt: Unclosed comment detection 
-- test4.txt: Keywords and identifiers 
-- test5.txt: Operators 
-- test6.txt: Basic expressions 
-- test7.txt: Multiple programs 
-- test8.txt: Number validation 
-- test9.txt: Parentheses 
-- test10.txt: regular strings/ bad character test
-- test11.txt: String missing closing quote with valid string after it
-- test12.txt: Comment in the middle of a string
+## Overview
 
-### All test cases passed
+This is the phase where the compiler becomes real: source code in, executable machine code out. The generator traverses the AST and emits 6502 opcodes (`LDA`/`STA`/`ADC`/`BNE`/`BRK`, plus a custom `FF` system-call instruction for I/O), laying out variables, temporaries, string literals, and branch targets in a 256-byte memory image.
 
-## Project 1 Reflection
-I genuinly enjoyed working through this project, and while I feel good about how it turned out, I unfortunately procrastinated a lot with getting started on this project which I regret. As a result, I spent v e r y long hours over a few days working on it when I should have just started earlier. While it was very diffucult I liked how this project kind of forced incremental development, which is why I recognize I should have started early. Moving to project 2 I will defeintely start earlier and work in smaller chunks day by day. 
+## Features
 
-## AI usage:
+- Full pipeline in one command: lex → parse → analyze → generate, with errors at any stage halting codegen
+- 6502 target with a custom `FF` system-call instruction powering `print` for integers and strings
+- Static memory layout: user variables allocated from `0xC0` upward, reserved temporaries for expression evaluation
+- Branch backpatching: forward jumps for `if`/`while` are emitted with placeholders and resolved in a second pass
+- String interning: duplicate string literals share a single pooled address
+- End-to-end verification: 19 tests including per-phase error cases (lexer, parser, and semantic errors each fail gracefully before codegen)
 
-### Tool used: Claude | Model: 3.5-Sonnet
+## Usage
 
-#### How I used it for development
-- Insight on code organization and how to efficiently structure my code with the context of best practices for lexers
-- Suggested the use of Switch statements instead of if/else chains - prompted me to actually learn about something I hadn't used which was really cool and was definitely more efficient
-- Guidance on method separation
-- Helped me understand tracking of line and column positioning
-- Was most helpful for debugging issues and helping with ideas for test cases
+```bash
+cd src
+javac *.java
+java Compiler ../test/test4.txt
+```
 
-#### My Takeaway with this
-- As I developed this project and used Claude when I was stuck - what I focused on was not using any code unless I absolutely understood what it was doing, and even then making it my own
-- For example with the Switch statements, I made sure I had a real understanding of how it functioned before I implemented it in my code
-- Claude was a fantastic tool to be able to help me better understand the concepts we covered in class and with debugging
-  
+Example input:
 
-#### What AI still struggles with
-- What i found interesting that didn't work great is AI still struggles with hallucinations and being very confidently wrong
-- For instance often it would offer a "solution" to a bug but the fix it was proposing would clearly break other sections of the code
+```
+{
+  int x
+  x = 1 + 2
+  print(x)
 
+  int y
+  y = 4 + x
+  print(y)
+} $
+```
+
+The compiler lexes, parses, type-checks, and emits the corresponding 6502 machine code as a hex memory image.
+
+## Test suite
+
+19 test programs: variable declaration/assignment, arithmetic, `if`/`while` control flow, nested scopes with shadowing, loop backpatching across multiple branch instructions, a string-pool stress test, and error cases from every earlier phase — all passing.
+
+## Files
+
+- `src/CodeGenerator.java` — AST → 6502 machine code (~780 lines)
+- `src/ASTBuilder.java`, `src/ASTNode.java`, `src/SemanticAnalyzer.java`, `src/SymbolTable.java`, `src/Symbol.java` — phase 3, unchanged
+- `src/Parser.java`, `src/CSTNode.java`, `src/Lexer.java`, `src/Token.java` — phases 1–2, unchanged
+- `src/Compiler.java` — driver (~3,000 lines total across the final branch)
+
+## A four-phase compiler
+
+1. [Lexer](https://github.com/MKempler/Compilers/tree/Lexer) — character stream → tokens
+2. [Parser](https://github.com/MKempler/Compilers/tree/Parser) — tokens → concrete syntax tree
+3. [Semantic Analysis](https://github.com/MKempler/Compilers/tree/SemanticAnalysis) — CST → AST, scoping, type checking
+4. **Code Generation** (this branch) — AST → 6502 machine code
